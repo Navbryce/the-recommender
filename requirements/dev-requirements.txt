@@ -1,0 +1,3 @@
+# Dev requirements
+-r requirements.txt
+pycodestyle>=2.5.0
