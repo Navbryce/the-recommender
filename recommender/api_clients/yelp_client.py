@@ -1,6 +1,7 @@
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
+from recommender.data.business import Business
 from recommender.data.location import Location
 
 BUSINESS_SEARCH_QUERY = gql(
@@ -32,8 +33,12 @@ class YelpClient:
             transport=yelp_graph_api_transport, fetch_schema_from_transport=False
         )
 
-    def businesses_search(self, location: Location):
+    def businesses_search(self, location: Location) -> [Business]:
         lat, long = location
-        return self.yelp_graph_api_client.execute(
+        result = self.yelp_graph_api_client.execute(
             BUSINESS_SEARCH_QUERY, {"lat": lat, "long": long}
         )
+        search_result = result["search"]
+        return [
+            Business.from_dict(yelp_dict) for yelp_dict in search_result["business"]
+        ]
