@@ -14,7 +14,8 @@ BUSINESS_SEARCH_QUERY = gql(
             id,
             name
             url,
-            rating
+            rating,
+            price
         }
     }
 }"""

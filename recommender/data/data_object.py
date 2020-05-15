@@ -13,10 +13,9 @@ class DataObject(object):
 
         def build(inner_self):
             for attr in self._required_attributes:
-                if (
+                try:
                     object.__getattribute__(inner_self, _get_req_attr_real_name(attr))
-                    is None
-                ):
+                except AttributeError:
                     raise ValueError("Missing required attribute %s" % attr)
             self._built = True
             return inner_self
