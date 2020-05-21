@@ -2,6 +2,7 @@ from recommender.data.data_object import DataObject
 from recommender.data.price import PriceCategory
 
 
+@DataObject(["id", "name", "url", "rating", "priceCategory"])
 class Business(object):
     @staticmethod
     def from_dict(yelp_dict):
@@ -16,9 +17,7 @@ class Business(object):
         """
         if "price" not in yelp_dict:
             raise ValueError("No price found")
-        business._priceCategory = PriceCategory.from_category_string(yelp_dict["price"])
+        business._priceCategory = PriceCategory.from_api_return_value(
+            yelp_dict["price"]
+        )
         return business.build()
-
-    @DataObject(["id", "name", "url", "rating", "priceCategory"])
-    def __new__(cls, *args, **kwargs):
-        pass

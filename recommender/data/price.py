@@ -11,6 +11,18 @@ class PriceCategory(Enum):
     MID_HIGH = 3
     HIGH = 4
 
+    @staticmethod
+    def from_name(enum_name: str):
+        if enum_name not in PRICE_CATEGORY_NAME_TO_CATEGORY:
+            raise ValueError("Unknown name for enum: " + enum_name)
+        return PRICE_CATEGORY_NAME_TO_CATEGORY[enum_name]
+
+    @staticmethod
+    def from_api_return_value(category_string: Optional[str]):
+        if category_string not in PRICE_RETURN_VALUE_TO_CATEGORY:
+            raise ValueError("Unknown value category: " + category_string)
+        return PRICE_RETURN_VALUE_TO_CATEGORY[category_string]
+
     def __repr__(self):
         return self.__str__()
 
@@ -25,14 +37,12 @@ class PriceCategory(Enum):
             else "".join(["$" for value in range(self.value)])
         )
 
-    @staticmethod
-    def from_category_string(category_string: Optional[str]):
-        if category_string not in PRICE_RETURN_VALUE_TO_CATEGORY:
-            raise ValueError("Unknown value category: " + category_string)
-        return PRICE_RETURN_VALUE_TO_CATEGORY[category_string]
-
 
 PRICE_RETURN_VALUE_TO_CATEGORY = {
     priceCategory.get_api_return_value(): priceCategory
     for priceCategory in PriceCategory
+}
+
+PRICE_CATEGORY_NAME_TO_CATEGORY = {
+    priceCategory.name: priceCategory for priceCategory in PriceCategory
 }

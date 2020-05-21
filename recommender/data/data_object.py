@@ -3,14 +3,7 @@ class DataObject(object):
         self._required_attributes = required_attributes
         self._built = False
 
-    def __call__(self, other_class_new, *args, **kwargs):
-        def __new__(cls, *args, **kwargs):
-            cls.build = build
-            cls.__getattribute__ = __getattribute__
-            cls.__str__ = __str__
-            cls.__repr__ = __str__
-            return super(cls.__class__, cls).__new__(cls, *args, **kwargs)
-
+    def __call__(self, cls, *args, **kwargs):
         def build(inner_self):
             for attr in self._required_attributes:
                 try:
@@ -18,6 +11,10 @@ class DataObject(object):
                 except AttributeError:
                     raise ValueError("Missing required attribute %s" % attr)
             self._built = True
+
+            if hasattr(inner_self, "post_build"):
+                inner_self.post_build()
+
             return inner_self
 
         def _get_req_attr_real_name(req_attr_name) -> str:
@@ -38,4 +35,8 @@ class DataObject(object):
             )
             return "%s {%s}" % (class_name, attributes_string)
 
-        return __new__
+        cls.build = build
+        cls.__getattribute__ = __getattribute__
+        cls.__str__ = __str__
+        cls.__repr__ = __str__
+        return cls
