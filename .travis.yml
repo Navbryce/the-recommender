@@ -4,7 +4,7 @@ stages:
 jobs:
   include:
   - stage: build
-  - language: python
+    language: python
     python:
     - '3.6'
     - '3.7'
@@ -25,7 +25,7 @@ jobs:
     - npm install --dev
     script:
     - npm run build-prod
-    - npm run headless-test
+    #- npm run headless-test
   - stage: deploy
     deploy:
       provider: heroku
