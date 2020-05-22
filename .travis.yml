@@ -1,6 +1,6 @@
 stages:
-  - build
   - deploy
+  - tests
 jobs:
   include:
   - stage: tests
@@ -30,6 +30,7 @@ jobs:
     language: node_js
     script:
     - cd frontend
+    - npm install --dev
     - npm run build-prod
     - cd ..
     deploy:
