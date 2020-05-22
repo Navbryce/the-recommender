@@ -4,8 +4,6 @@ from recommender.data.data_object import DataObject
 from recommender.data.location import Location
 from recommender.data.price import PriceCategory
 
-T = TypeVar("T")
-
 
 @DataObject(
     [
@@ -15,6 +13,7 @@ T = TypeVar("T")
         "categories",
         "attributes",
         "radius",
+        "already_seen_businesses",
     ]
 )
 class BusinessSearchRequest:
@@ -30,7 +29,5 @@ class BusinessSearchRequest:
         request._categories = json_dict["categories"]
         request._attributes = json_dict["attributes"]
         request._radius = json_dict["radius"]
+        request._already_seen_businesses = json_dict["already_seen_businesses"]
         return request.build()
-
-    def array_to_search_string(values_array: [T]) -> str:
-        return ", ".join(values_array)

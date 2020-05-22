@@ -27,10 +27,13 @@ class PriceCategory(Enum):
         return self.__str__()
 
     def __str__(self):
-        return "FREE" if self == PriceCategory.FREE else self.get_api_return_value()
+        return self.name
+
+    def get_yelp_api_filter_value(self):
+        return self.value
 
     # The value returned for "price" in the API is different from the value used to filter results
-    def get_api_return_value(self) -> Optional[str]:
+    def get_yelp_api_return_value(self) -> Optional[str]:
         return (
             None
             if self == PriceCategory.FREE
@@ -39,7 +42,7 @@ class PriceCategory(Enum):
 
 
 PRICE_RETURN_VALUE_TO_CATEGORY = {
-    priceCategory.get_api_return_value(): priceCategory
+    priceCategory.get_yelp_api_return_value(): priceCategory
     for priceCategory in PriceCategory
 }
 

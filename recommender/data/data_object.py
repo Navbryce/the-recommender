@@ -22,6 +22,8 @@ class DataObject(object):
 
         def __getattribute__(inner_self, name):
             if self._built or name == "build":
+                if name in self._required_attributes:
+                    name = _get_req_attr_real_name(name)
                 return object.__getattribute__(inner_self, name)
             raise ValueError("Not yet built")
 

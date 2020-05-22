@@ -1,8 +1,12 @@
+from typing import TypeVar
+
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from recommender.data.business import Business
 from recommender.data.location import Location
+from recommender.data.price import PriceCategory
+from recommender.external_api_clients.search_client import SearchClient
 
 BUSINESS_SEARCH_QUERY = gql(
     """query businessSearch($lat: Float, $long: Float) {
@@ -21,8 +25,14 @@ BUSINESS_SEARCH_QUERY = gql(
 }"""
 )
 
+T = TypeVar("T")
 
-class YelpClient:
+
+class YelpClient(SearchClient):
+    @staticmethod
+    def array_to_search_string(values_array: [T]) -> str:
+        return ", ".join([str(value) for value in values_array])
+
     def __init__(self, api_key: str) -> None:
         yelp_graph_api_transport = RequestsHTTPTransport(
             url="https://api.yelp.com/v3/graphql",
@@ -34,8 +44,24 @@ class YelpClient:
             transport=yelp_graph_api_transport, fetch_schema_from_transport=False
         )
 
-    def businesses_search(self, location: Location) -> [Business]:
+    def business_search(
+        self,
+        location: Location,
+        search_term: str,
+        price_categories: [PriceCategory],
+        categories: [str],
+        attributes: [str],
+        radius: int,
+    ) -> [Business]:
         lat, long = location
+        price_categories_filter = YelpClient.array_to_search_string(
+            [
+                priceCategory.get_yelp_api_filter_value()
+                for priceCategory in price_categories
+            ]
+        )
+        category_filter = YelpClient.array_to_search_string(categories)
+        attributes_filter = YelpClient.array_to_search_string(attributes)
         result = self.yelp_graph_api_client.execute(
             BUSINESS_SEARCH_QUERY, {"lat": lat, "long": long}
         )

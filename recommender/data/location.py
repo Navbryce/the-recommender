@@ -6,3 +6,6 @@ Location = namedtuple("Location", ["lat", "long"])
 
 def from_json(json_dict: Dict) -> Location:
     return Location(**json_dict)
+
+
+Location.from_json = from_json
