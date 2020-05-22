@@ -1,3 +1,4 @@
+echo 'TEST'
 cd backend
 pipenv install
 pipenv shell
