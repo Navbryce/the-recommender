@@ -13,7 +13,6 @@ flask = "~=1.1.2"
 [dev-packages]
 pycodestyle = "~=2.5.0"
 black = "==19.10b"
-pre-commit = "~=2.2"
 python-dotenv = "~=0.13.0"
 
 [requires]
