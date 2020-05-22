@@ -1,4 +1,4 @@
-matrix:
+jobs:
   include:
     - language: python
       python:
@@ -11,8 +11,8 @@ matrix:
         - pip install pipenv
         - pipenv install --dev
       script:
-        - pytest ./backend/tests/
-    - language: node.js
+        - pytest ./tests/
+    - language: node_js
       node_js:
         - "14.3.0"
       before_install:
