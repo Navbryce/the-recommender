@@ -16,10 +16,6 @@ from recommender.api import start_api
 load_dotenv(verbose=True)
 
 
-def main():
-    """ Entry point of app """
-
-
 def test_function():
     return 1
 
