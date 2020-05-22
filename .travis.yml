@@ -28,11 +28,14 @@ jobs:
     - ignore
   - stage: deploy
     language: node_js
-    script:
+    before_install:
     - cd frontend
+    install:
     - npm install --dev
+    script:
     - npm run build-prod
-    - cd ..
+    before_deploy:
+     - cd ..
     deploy:
       provider: heroku
       api_key:
