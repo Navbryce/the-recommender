@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "50d10cec576ad34958db811e20757fa981e7b230a741e2ea311b37357325e685"
+            "sha256": "aa48edb590ec9233d8899e05a807bff66db893b0c3702e0a2891b7ea45dbe5d4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -15,7 +15,12 @@
             }
         ]
     },
-    "default": {},
+    "default": {
+        "backend": {
+            "editable": true,
+            "path": "./backend"
+        }
+    },
     "develop": {
         "appdirs": {
             "hashes": [

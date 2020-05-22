@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build-prod": "ng build --configuration=production",
     "test": "ng test",
     "headless-test": "ng test --watch=false --browsers=ChromeHeadless",
     "lint": "ng lint",
