@@ -1,10 +1,24 @@
-language: python
-python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-install:
-  - pip install pipenv
-  - pipenv install --dev
-script:
-  - pytest ./tests/
+matrix:
+  include:
+    - language: python
+      python:
+        - "3.6"
+        - "3.7"
+        - "3.8"
+      before_install:
+        - cd backend
+      install:
+        - pip install pipenv
+        - pipenv install --dev
+      script:
+        - pytest ./backend/tests/
+    - language: node.js
+      node_js:
+        - "14.3.0"
+      before_install:
+        - cd frontend
+      install:
+        - npm install --dev
+      script:
+        - npm run build
+        - npm run headless-test
