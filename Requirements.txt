@@ -1,2 +1,0 @@
-# Requirements for Heroku to run the web api (WSGI)
-waitress==1.4
