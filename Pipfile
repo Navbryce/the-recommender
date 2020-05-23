@@ -17,4 +17,4 @@ python-dotenv = "~=0.13.0"
 pre-commit = "~=2.2"
 
 [requires]
-python_version = "3.6"
+python_version = "3.8.3"
