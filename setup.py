@@ -1,3 +1,3 @@
 from distutils.core import setup
 
-setup(name="The-Recommender", packages=["recommender"])
+setup(name="the-recommender", packages=["recommender"])
