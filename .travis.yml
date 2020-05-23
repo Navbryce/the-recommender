@@ -15,12 +15,12 @@ jobs:
     script:
     - pytest ./tests/
   - stage: deploy
+    script: ignore
     deploy:
-      script: ignore
       provider: heroku
       api_key:
         secure: gvpFhCCECBKvIrcnJZ//HChSehYJM9c77oesXHcrvgVr6WBlbQK1ok09d+qknXEiQR3zsNO6Ti5POCdCGFKCquXgvjtaMAPmdMu5z3x80/RPaujSbQvcNHj1Hrye4P7GI6dXv8ZLLy5TsJ+LkTyXSF8BhyLHc77Vns45dIVT4zzKGjkEzsOrKFo3PkIZTtxbGGJGrF5sLupsSmoD49BRl1CsP5pFjC7zJ92PVzKDjtK/B4Q97ZoV0NvV2RT0Z6VleYGwnDmdRgzmPfLIM57+5VRh6rIB0deSRJdqeVsg77YYXaDjs4PQJfUruBOraX/CwszXP0JlzbcBjqhuJu8s0HhI/e8C7H2ewilkVCCeUf/VRq2uQ+UkId02qTUjGD2eKnXtE7pI4IgHJaQIrDpp1noKWVSJFemjeYt1v/iX1aDkpmV72qfUWmhcVBCoRV5tP8H+NFyrXhzcNvJSjIGPAmjmK/ip7Toe89I1lu1rvz0BQoGc7JAno5StcGvRtd00Y2xnFVaOAawpDVyvT0nd049JTiJJDY6cB5JB1C1v2fAytiJlVcHQLufewU5quyEf6l+u/E+aEx6ckwRCrCbV+dMbt8tNZEFW0aI9NnlWkdKuoCM9LY99EOQ0Qi2v0wdPyJEe6+i/SiGd+vq42pY00w+1p9HlCPnkqDTKyRvE+F4=
       app: the-recommender-heroku
       on:
         repo: Navbryce/the-recommender
-      cleanup: 'true'
+      cleanup: true
