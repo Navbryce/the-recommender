@@ -33,7 +33,7 @@ jobs:
     before_install:
     - cd frontend
     install:
-    - npm install --dev
+    - npm install --production
     script:
     - npm run build-prod
     before_deploy:
