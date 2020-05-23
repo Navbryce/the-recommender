@@ -9,12 +9,35 @@ jobs:
     - '3.6'
     - '3.7'
     - '3.8'
+    before_install:
+    - cd backend
     install:
     - pip install pipenv
     - pipenv install --dev
     script:
     - pytest ./tests/
+  - language: node_js
+    node_js:
+    - 14.3.0
+    before_install:
+    - cd frontend
+    install:
+    - npm install
+    script:
+    #- npm run headless-test
+    - ignore
   - stage: deploy
+    language: node_js
+    node_js:
+      - 14.3.0
+    before_install:
+    - cd frontend
+    install:
+    - npm install
+    script:
+    - npm run build-prod
+    before_deploy:
+     - cd ..
     deploy:
       provider: heroku
       api_key:
