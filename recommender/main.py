@@ -8,6 +8,8 @@ __author__ = "Bryce"
 __version__ = "0.1.0"
 __license__ = "MIT"
 
+import os
+
 from dotenv import load_dotenv
 
 from recommender.api import start_api
@@ -21,4 +23,4 @@ def test_function():
 
 
 if __name__ == "__main__":
-    start_api().run()
+    start_api().run(port=os.environ["PORT"])
