@@ -1,1 +1,1 @@
-web: python ./recommender/main.py
+web: pipenv run python ./recommender/main.py
