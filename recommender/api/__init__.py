@@ -2,6 +2,11 @@ import os
 
 from flask import Flask
 
+from dotenv import load_dotenv
+
+# We need to use an external dependency for env management because pycharm does not currently support .env files
+load_dotenv(verbose=True)
+
 
 def start_api(test_config=None):
     # create and configure the app

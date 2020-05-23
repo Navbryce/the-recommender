@@ -1,1 +1,1 @@
-web: python ./recommender/main.py
+web: waitress-serve --call recommender.api:start_api --port $PORT

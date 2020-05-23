@@ -10,12 +10,7 @@ __license__ = "MIT"
 
 import os
 
-from dotenv import load_dotenv
-
 from recommender.api import start_api
-
-# We need to use an external dependency for env management because pycharm does not currently support .env files
-load_dotenv(verbose=True)
 
 
 def test_function():
@@ -23,4 +18,4 @@ def test_function():
 
 
 if __name__ == "__main__":
-    start_api().run(port=os.environ["PORT"])
+    start_api().run(host=os.environ["HOST"], port=os.environ["PORT"])
