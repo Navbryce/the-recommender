@@ -15,7 +15,7 @@ jobs:
     script:
     - pytest ./tests/
   - stage: deploy
-    script: ignore
+    script: pipenv install
     deploy:
       provider: heroku
       api_key:
