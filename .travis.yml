@@ -5,15 +5,15 @@ install:
   - pip install pipenv
   - pipenv install --dev
 stages:
-  - deploy
   - tests
+  - deploy
 jobs:
   include:
   - stage: tests
     script:
     - pytest ./tests/
   - stage: deploy
-    script: ignore
+    script: pipenv lock -r > requirements.txt
     deploy:
       provider: heroku
       api_key:
@@ -21,4 +21,4 @@ jobs:
       app: the-recommender-heroku
       on:
         repo: Navbryce/the-recommender
-      cleanup: true
+      cleanup: false
