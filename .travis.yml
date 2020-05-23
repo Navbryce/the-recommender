@@ -15,7 +15,7 @@ jobs:
     script:
     - pytest ./tests/
   - stage: deploy
-    script: pipenv lock
+    script: ignore
     deploy:
       provider: heroku
       api_key:
@@ -23,4 +23,4 @@ jobs:
       app: the-recommender-heroku
       on:
         repo: Navbryce/the-recommender
-      cleanup: false
+      cleanup: true
