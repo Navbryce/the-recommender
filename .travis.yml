@@ -22,7 +22,7 @@ jobs:
     before_install:
     - cd frontend
     install:
-    - npm install --dev
+    - npm install
     script:
     #- npm run headless-test
     - ignore
@@ -33,7 +33,7 @@ jobs:
     before_install:
     - cd frontend
     install:
-    - npm install --production
+    - npm install
     script:
     - npm run build-prod
     before_deploy:
