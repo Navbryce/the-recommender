@@ -21,4 +21,5 @@ jobs:
       app: the-recommender-heroku
       on:
         repo: Navbryce/the-recommender
+      skip_cleanup: true
 
