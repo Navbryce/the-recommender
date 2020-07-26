@@ -12,10 +12,5 @@ import os
 
 from recommender.api import start_api
 
-
-def test_function():
-    return 1
-
-
 if __name__ == "__main__":
     start_api().run(host=os.environ["HOST"], port=os.environ["PORT"])

@@ -5,12 +5,15 @@ from flask import Flask
 from dotenv import load_dotenv
 
 # We need to use an external dependency for env management because pycharm does not currently support .env files
+from flask_cors import CORS
+
 load_dotenv(verbose=True)
 
 
 def start_api(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
+    CORS(app)
 
     # register blue prints
     from recommender.api.business_search import business_search
