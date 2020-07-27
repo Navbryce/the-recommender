@@ -13,7 +13,7 @@ from recommender.data.price import PriceCategory
         "categories",
         "attributes",
         "radius",
-        "already_seen_businesses",
+        "rejected_businesses",
     ]
 )
 class BusinessSearchRequest:
@@ -29,5 +29,5 @@ class BusinessSearchRequest:
         request._categories = json_dict["categories"]
         request._attributes = json_dict["attributes"]
         request._radius = json_dict["radius"]
-        request._already_seen_businesses = json_dict["already_seen_businesses"]
+        request._already_seen_businesses = json_dict["rejected_businesses"]
         return request.build()
