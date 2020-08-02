@@ -27,8 +27,8 @@ jobs:
     - cat requirements.txt
     deploy:
       provider: heroku
-        api_key:
-          secure: C74R19rlY2lrepGdGptlOWhqLC2qi+Dvo6lHFD1ERuTmS7P6+jQ2AljqOEJuJybnloUFXvqfDDIxyD5MWU5oBvsCt+Nb4R2zQpjr3CCvT/tOW6Sb+3NGq0dFswDY+059jp2shPfItikAOKr6r/w/31xS95pHEAW6vIQjJoE4Z+yQ4GtVP049wqotFnOb4cWY6L8x9V0CTkKLK8GwvXdGDV4R2JJOxWpOFEw2sAu+NCLHjaBNVwUxkraq/ZWesUIR59tylgAOGVI0G+l9EHFKVvrVSC7u90wsJvHYwPe9nE64h7xaTw3X0Ld4FLxo/OVU+MsP6zoDG23jpghLd0OtpMKs7dav/yHRDUeAuJ7euiWE3womVAaRM1e0xZEUOkc1UTIQ5w/pPkdCPEj2lzmPm+wlIYG4EFVNcSp9EQ/lxUbJxfXc0YW/nvssubfzHwRduLwCzK/s75J49ZPIygSKiIfP48AHW/HREO9T0iMedJligjWgCItW4wNcdA/levttmDYhN2iVowNSeNPnOIPX6degD1WOVR2lqudW915GsJu+Fh9m86KG7eqJBuFQH319OGeycOyER3KSvRdDr7zsVVJuv7gcoEDe5cbKjuY2u35fASzqFJgOWJfn2SU7hcpnK4UojwmeJS2FoezOlMhOUACuy+lgh3W0BkFuzpEle/I=
+      api_key:
+        secure: C74R19rlY2lrepGdGptlOWhqLC2qi+Dvo6lHFD1ERuTmS7P6+jQ2AljqOEJuJybnloUFXvqfDDIxyD5MWU5oBvsCt+Nb4R2zQpjr3CCvT/tOW6Sb+3NGq0dFswDY+059jp2shPfItikAOKr6r/w/31xS95pHEAW6vIQjJoE4Z+yQ4GtVP049wqotFnOb4cWY6L8x9V0CTkKLK8GwvXdGDV4R2JJOxWpOFEw2sAu+NCLHjaBNVwUxkraq/ZWesUIR59tylgAOGVI0G+l9EHFKVvrVSC7u90wsJvHYwPe9nE64h7xaTw3X0Ld4FLxo/OVU+MsP6zoDG23jpghLd0OtpMKs7dav/yHRDUeAuJ7euiWE3womVAaRM1e0xZEUOkc1UTIQ5w/pPkdCPEj2lzmPm+wlIYG4EFVNcSp9EQ/lxUbJxfXc0YW/nvssubfzHwRduLwCzK/s75J49ZPIygSKiIfP48AHW/HREO9T0iMedJligjWgCItW4wNcdA/levttmDYhN2iVowNSeNPnOIPX6degD1WOVR2lqudW915GsJu+Fh9m86KG7eqJBuFQH319OGeycOyER3KSvRdDr7zsVVJuv7gcoEDe5cbKjuY2u35fASzqFJgOWJfn2SU7hcpnK4UojwmeJS2FoezOlMhOUACuy+lgh3W0BkFuzpEle/I=
       app: the-recommender-heroku
       skip_cleanup: true
 
