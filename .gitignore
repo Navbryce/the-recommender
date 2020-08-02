@@ -101,5 +101,7 @@ ENV/
 # ide
 .idea/
 
+**/**.swp
+
 # build pipeline
 .travis.yml.swp

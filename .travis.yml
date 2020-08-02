@@ -3,11 +3,13 @@ python:
   - '3.8'
 install:
   - pip install pipenv
-  - pipenv lock
   - pipenv install --dev
 stages:
   - tests
   - deploy
+env:
+  global:
+  - PIPENV_IGNORE_VIRTUALENVS=1
 jobs:
   include:
   - stage: tests
@@ -17,7 +19,7 @@ jobs:
     script: 
     - pipenv lock -r > requirements.txt
     - cat requirements.txt
-    - cat Pipfile
+    - cat Pipfile.lock
     deploy:
       provider: heroku
       api_key:
