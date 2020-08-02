@@ -4,6 +4,7 @@ python:
 install:
   - pip install pipenv
   - pipenv install --dev
+  - pipenv lock
 stages:
   - tests
   - deploy
@@ -13,7 +14,8 @@ jobs:
     script:
     - pytest ./tests/
   - stage: deploy
-    script: pipenv lock -r > requirements.txt
+    script: 
+    - pipenv lock -r > requirements.txt
     deploy:
       provider: heroku
       api_key:
