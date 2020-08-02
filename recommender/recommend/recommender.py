@@ -14,7 +14,7 @@ class Recommender:
             req_params.location,
             req_params.search_term,
             req_params.price_categories,
-            req_params.categ_paramsories,
+            req_params.categories,
             req_params.attributes,
             req_params.radius,
         )

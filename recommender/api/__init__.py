@@ -16,7 +16,7 @@ def start_api(test_config=None):
     CORS(app)
 
     # register blue prints
-    from recommender.api.business_search import business_search
+    from recommender.api.business_search_route import business_search
 
     app.register_blueprint(business_search, url_prefix="/business-search")
 

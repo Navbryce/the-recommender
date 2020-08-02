@@ -37,7 +37,7 @@ class YelpClient(SearchClient):
         yelp_graph_api_transport = RequestsHTTPTransport(
             url="https://api.yelp.com/v3/graphql",
             use_json=True,
-            headers={"Content-type": "application/json", "Authorization": api_key},
+            headers={"Content-type": "application/json", "Authorization": "Bearer {api_key}".format(api_key=api_key)},
             verify=True,
         )
         self.yelp_graph_api_client = Client(

@@ -8,6 +8,6 @@ from recommender.data.business_search_request import BusinessSearchRequest
 @dataclass
 class SearchSession:
     id: str
-    searchRequest: BusinessSearchRequest
-    seen_business_ids: [str]
-    next_recommendation_id: Optional[str]
+    search_request: BusinessSearchRequest
+    next_recommendation_id: Optional[str] = None
+    seen_business_ids: [str] = []

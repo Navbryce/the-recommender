@@ -5,5 +5,5 @@ from recommender.data.search_session import SearchSession
 
 @dataclass
 class RecommendationResponse:
-    searchSession: SearchSession
-    recommendation: Business;
+    search_session: SearchSession
+    recommendation: Business
