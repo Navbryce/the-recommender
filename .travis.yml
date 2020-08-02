@@ -1,11 +1,11 @@
 language: python
 python:
-  - '3.8.5'
+- 3.8.5
 install:
-  - pip install pipenv
+- pip install pipenv
 stages:
-  - tests
-  - deploy
+- tests
+- deploy
 env:
   global:
   - PIPENV_IGNORE_VIRTUALENVS=1
@@ -19,7 +19,7 @@ jobs:
     - cat Pipfile.lock
     - cat requirements.txt
   - stage: deploy
-    script: 
+    script:
     - pipenv sync
     - pipenv lock -r > requirements.txt
     - echo 'Dependencies installed:'
@@ -28,7 +28,6 @@ jobs:
     deploy:
       provider: heroku
       api_key:
-        secure: C74R19rlY2lrepGdGptlOWhqLC2qi+Dvo6lHFD1ERuTmS7P6+jQ2AljqOEJuJybnloUFXvqfDDIxyD5MWU5oBvsCt+Nb4R2zQpjr3CCvT/tOW6Sb+3NGq0dFswDY+059jp2shPfItikAOKr6r/w/31xS95pHEAW6vIQjJoE4Z+yQ4GtVP049wqotFnOb4cWY6L8x9V0CTkKLK8GwvXdGDV4R2JJOxWpOFEw2sAu+NCLHjaBNVwUxkraq/ZWesUIR59tylgAOGVI0G+l9EHFKVvrVSC7u90wsJvHYwPe9nE64h7xaTw3X0Ld4FLxo/OVU+MsP6zoDG23jpghLd0OtpMKs7dav/yHRDUeAuJ7euiWE3womVAaRM1e0xZEUOkc1UTIQ5w/pPkdCPEj2lzmPm+wlIYG4EFVNcSp9EQ/lxUbJxfXc0YW/nvssubfzHwRduLwCzK/s75J49ZPIygSKiIfP48AHW/HREO9T0iMedJligjWgCItW4wNcdA/levttmDYhN2iVowNSeNPnOIPX6degD1WOVR2lqudW915GsJu+Fh9m86KG7eqJBuFQH319OGeycOyER3KSvRdDr7zsVVJuv7gcoEDe5cbKjuY2u35fASzqFJgOWJfn2SU7hcpnK4UojwmeJS2FoezOlMhOUACuy+lgh3W0BkFuzpEle/I=
+        secure: KnOPTbxDAHEwW/Ij7zLXSjPSIhbseogeLfDRVEerRQIsChQv//kYhDlV4VTPmWf/d60iyVDuyO8zYrWrq130nx3bZSLSdFQ/VYNrCC0ZfuNVgT56JuyCezKrRvQCxFZrdZwTKryVcwYeC+iaBNaBFmPze/Pe8jlMgFf5O+VHpnWxDVRoN6Q3aQuGP167FC6BAneufJFxTDd9Buh1IzNlAYZN5hEJrFy6Fio9CHXHnb+1sQnYp0ZsxPlEgBSQHxpWmyyMDRiuHUZ88W0oy0qTDz72B8k4b24vlwHbL+C1tKY522W83l33QnUaea8RxvUI21h0rbsVP5GYTq/ihHdAhgV1UIHWd/B0C8/tM6t6XuCQvyVX8XbezsssEw+h34BjeJNiMLNrPnOOFGFvRRbsYt/kmX/TrUuKB7njorFxcbT9gdZzWSssM7EtA+zgBjcslgxZdYf8cLXYpUESU1sCypuVu1vNQCeVsh7OiOlhGAYgncGyus2hXlKgQy+WuBFra2KgmKj5tO75ueLCU3nbKq+N/resedVosEyu9CV08UuaAbA6q0ZqcNON/ExohFzPTDP/7KJSjMllUz58o2wOoz353wvkcpLP+stZx4ro0XJ0/vhTT3xg9urfmeiq92RdNGgfoNxw6cEiqK4xwDOMzoq7prCr06NO3l3cIz5heVM=
       app: the-recommender-heroku
       skip_cleanup: true
-
