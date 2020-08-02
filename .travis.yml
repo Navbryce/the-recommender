@@ -3,8 +3,8 @@ python:
   - '3.8'
 install:
   - pip install pipenv
-  - pipenv install --dev
   - pipenv lock
+  - pipenv install --dev
 stages:
   - tests
   - deploy
@@ -16,6 +16,8 @@ jobs:
   - stage: deploy
     script: 
     - pipenv lock -r > requirements.txt
+    - cat requirements.txt
+    - cat Pipfile
     deploy:
       provider: heroku
       api_key:
