@@ -18,8 +18,8 @@ jobs:
   - stage: deploy
     script: 
     - pipenv lock -r > requirements.txt
-    - cat requirements.txt
     - cat Pipfile.lock
+    - cat requirements.txt
     deploy:
       provider: heroku
       api_key:

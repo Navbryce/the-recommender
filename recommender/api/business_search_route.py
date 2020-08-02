@@ -3,7 +3,6 @@ import os
 from typing import Dict
 
 import jsonpickle as jsonpickle
-import jsons as jsons
 from flask import Blueprint, request
 
 from recommender.data.business_search_request import BusinessSearchRequest
@@ -24,6 +23,12 @@ session_manager: SessionManager = SessionManager(recommender)
 def new_business_search() -> str:
     search_request = BusinessSearchRequest.from_dict(request.json)
     session = session_manager.new_session(search_request)
-    business_recommendation = session_manager.get_next_recommendation_for_session(session)
-    return jsonpickle.encode(RecommendationResponse(search_session=session, recommendation=business_recommendation),
-                             unpicklable=False)
+    business_recommendation = session_manager.get_next_recommendation_for_session(
+        session
+    )
+    return jsonpickle.encode(
+        RecommendationResponse(
+            search_session=session, recommendation=business_recommendation
+        ),
+        unpicklable=False,
+    )
