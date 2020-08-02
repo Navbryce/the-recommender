@@ -3,7 +3,6 @@ python:
   - '3.8.5'
 install:
   - pip install pipenv
-  - pipenv install --dev
 stages:
   - tests
   - deploy
@@ -14,9 +13,13 @@ jobs:
   include:
   - stage: tests
     script:
+    - pipenv sync --dev
     - pytest ./tests/
+    - cat Pipfile.lock
+    - cat requirements.txt
   - stage: deploy
     script: 
+    - pipenv sync
     - pipenv lock -r > requirements.txt
     - cat Pipfile.lock
     - cat requirements.txt
