@@ -15,12 +15,14 @@ jobs:
     script:
     - pipenv sync --dev
     - pytest ./tests/
+    - echo 'Dependencies installed:'
     - cat Pipfile.lock
     - cat requirements.txt
   - stage: deploy
     script: 
     - pipenv sync
     - pipenv lock -r > requirements.txt
+    - echo 'Dependencies installed:'
     - cat Pipfile.lock
     - cat requirements.txt
     deploy:
