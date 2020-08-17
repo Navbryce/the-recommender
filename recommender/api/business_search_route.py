@@ -1,11 +1,12 @@
 import json
 import os
-from typing import Dict
 
 import jsonpickle as jsonpickle
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 
-from recommender.data.business_search_request import BusinessSearchRequest
+from recommender.api.json_content_type import json_content_type
+from recommender.data.recommendation.business_search_request import BusinessSearchRequest
+from recommender.data.recommendation.recommendation import Recommendation
 from recommender.data.recommendation_response import RecommendationResponse
 from recommender.external_api_clients.yelp_client import YelpClient
 from recommender.recommend.recommender import Recommender
@@ -20,15 +21,18 @@ session_manager: SessionManager = SessionManager(recommender)
 
 
 @business_search.route("/", methods=["POST"])
-def new_business_search() -> str:
+@json_content_type
+def new_business_search() -> Response:
     search_request = BusinessSearchRequest.from_dict(request.json)
     session = session_manager.new_session(search_request)
-    business_recommendation = session_manager.get_next_recommendation_for_session(
+    business_recommendation: Recommendation = session_manager.get_next_recommendation_for_session(
         session
     )
-    return jsonpickle.encode(
+    response_as_json = jsonpickle.encode(
         RecommendationResponse(
-            search_session=session, recommendation=business_recommendation
+            search_session=session,
+            recommendation=business_recommendation
         ),
-        unpicklable=False,
+        unpicklable=False
     )
+    return Response(response_as_json)

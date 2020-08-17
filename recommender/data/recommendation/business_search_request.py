@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, TypeVar
+from typing import Dict
 
-from recommender.data.data_object import DataObject
-from recommender.data.location import Location
-from recommender.data.price import PriceCategory
+from recommender.data.recommendation.location import Location
+from recommender.data.recommendation.price import PriceCategory
 
 @dataclass
 class BusinessSearchRequest:

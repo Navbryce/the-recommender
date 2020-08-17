@@ -1,14 +1,11 @@
-import os
-
-from flask import Flask
-
 from dotenv import load_dotenv
-
+from flask import Flask
 # We need to use an external dependency for env management because pycharm does not currently support .env files
 from flask_cors import CORS
 
 load_dotenv(verbose=True)
 
+import recommender.api.json_encode_config
 
 def start_api(test_config=None):
     # create and configure the app

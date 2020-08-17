@@ -1,8 +1,8 @@
 from uuid import uuid4
 
-from recommender.data.business import Business
-from recommender.data.business_search_request import BusinessSearchRequest
-from recommender.data.recommendation_engine_input import RecommendationEngineInput
+from recommender.data.recommendation.business_search_request import BusinessSearchRequest
+from recommender.data.recommendation.recommendation import Recommendation
+from recommender.data.recommendation.recommendation_engine_input import RecommendationEngineInput
 from recommender.data.search_session import SearchSession
 from recommender.recommend.recommender import Recommender
 
@@ -18,7 +18,7 @@ class SessionManager:
                              search_request=search_request)
 
 
-    def get_next_recommendation_for_session(self, session: SearchSession) -> Business:
+    def get_next_recommendation_for_session(self, session: SearchSession) -> Recommendation:
         business_recommendation = self.recommender.recommend(self.get_recommendation_input_from_session(session))
         session.next_recommendation_id = business_recommendation.id
         return business_recommendation

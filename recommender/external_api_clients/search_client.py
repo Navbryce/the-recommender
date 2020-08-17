@@ -1,19 +1,20 @@
 from abc import ABC, abstractmethod
 
-from recommender.data.business import Business
-from recommender.data.location import Location
-from recommender.data.price import PriceCategory
+from recommender.data.recommendation.business_search_request import BusinessSearchRequest
+from recommender.data.recommendation.displayable_business import DisplayableBusiness
+from recommender.data.recommendation.filterable_business import FilterableBusiness
+from recommender.external_api_clients.page import Page, FIRST_PAGE
 
 
 class SearchClient(ABC):
     @abstractmethod
     def business_search(
         self,
-        location: Location,
-        search_term: str,
-        price_categories: [PriceCategory],
-        categories: [str],
-        attributes: [str],
-        radius: int,
-    ) -> [Business]:
-        ...
+        search_params: BusinessSearchRequest,
+        page: Page
+    ) -> [FilterableBusiness]:
+        pass
+
+    @abstractmethod
+    def get_displayable_business(self, business_id: str) -> DisplayableBusiness:
+        pass

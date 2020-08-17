@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
-from recommender.data.data_object import DataObject
-from recommender.data.price import PriceCategory
+from recommender.data.recommendation.price import PriceCategory
 
 
 @dataclass
-class Business:
+class FilterableBusiness:
     @classmethod
     def from_dict(cls, yelp_dict):
         id = yelp_dict["id"]
@@ -14,19 +13,24 @@ class Business:
         rating = yelp_dict["rating"]
         """ 
         check is necessary because price is an optional field. We want to make sure we fetched it,
-        but it doens't need to be present (None price means 'FREE') 
+        but it doesn't need to be present (None price means 'FREE') 
         """
         if "price" not in yelp_dict:
             raise ValueError("No price found")
         price_category = PriceCategory.from_api_return_value(yelp_dict["price"])
-        return Business(id=id,
-                        name=name,
-                        url=url,
-                        rating=rating,
-                        price_category=price_category)
+
+        distance = yelp_dict["distance"]
+
+        return FilterableBusiness(id=id,
+                                  name=name,
+                                  url=url,
+                                  rating=rating,
+                                  price_category=price_category,
+                                  distance=distance)
 
     id: str
     name: str
     url: str
     rating: str
     price_category: PriceCategory
+    distance: float

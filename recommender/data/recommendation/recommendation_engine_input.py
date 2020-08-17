@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from recommender.data.business_search_request import BusinessSearchRequest
+from recommender.data.recommendation.business_search_request import BusinessSearchRequest
 
 
 @dataclass
