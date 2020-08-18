@@ -15,10 +15,11 @@ from recommender.external_api_clients.page import Page, FIRST_PAGE
 from recommender.external_api_clients.search_client import SearchClient
 
 BUSINESS_SEARCH_QUERY = gql(
-    """query businessSearch($lat: Float, $long: Float) {
+    """query businessSearch($lat: Float, $long: Float, $limit: Int, $offset: Int) {
     search(latitude: $lat,
             longitude: $long,
-            limit: 50) {
+            limit: $limit,
+            offset: $offset) {
         total
         business {
             id,
@@ -40,9 +41,9 @@ class YelpClient(SearchClient):
     def array_to_search_string(values_array: [T]) -> str:
         return ", ".join([str(value) for value in values_array])
 
-    BASE_URL: Final = 'https://api.yelp.com/v3'
+    BASE_URL: Final[str] = 'https://api.yelp.com/v3'
 
-    __headers: Final
+    __headers: Final[Dict[str, str]]
     __yelp_graph_api_client: Client
 
     def __init__(self, api_key: str) -> None:

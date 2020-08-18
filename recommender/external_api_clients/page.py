@@ -12,5 +12,5 @@ class Page:
         return Page(limit=self.limit, offset=self.offset + self.limit)
 
 
-FIRST_PAGE: Final = Page(limit=0, offset=0)
+FIRST_PAGE: Final = Page(limit=20, offset=0)
 
