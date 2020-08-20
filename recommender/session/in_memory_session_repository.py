@@ -1,26 +1,41 @@
-from typing import Dict
 
-from recommender.data.recommendation.recommendation import Recommendation
+from typing import Dict
 from recommender.session.search_session import SearchSession
 from recommender.session.session_repository import SessionRepository
 
 
 class InMemorySessionRepository(SessionRepository):
-    repository: Dict[str, SearchSession] = {}
+    session_repository: Dict[str, SearchSession] = {}
 
     def get_session(self, session_id: str):
-        if session_id not in self.repository:
+        if session_id not in self.session_repository:
             raise ValueError(f"Could not find session with id {session_id}")
-        return self.repository[session_id]
+        return self.session_repository[session_id].clone()
 
     def insert_new_session(self, session: SearchSession):
-        self.repository[session.id] = session
+        self.session_repository[session.id] = session.clone()
 
-    def set_current_recommendation_for_session(self, session_id: str, recommendation: Recommendation):
-        self.repository[session_id].current_recommendation = recommendation
+    def insert_new_recommendation(self, recommendation: str):
+        self.recommendation_repository[recommendation.id] = recommendation
 
-    def get_current_recommendation_for_session(self, session_id: str) -> Recommendation:
-        return self.repository[session_id].current_recommendation
+    def get_recommendations(self, recommendation_ids: [str]) -> [str]:
+        return [self.recommendation_repository[recommendation_id] for recommendation_id in recommendation_ids]
 
-    def add_rejected_recommendation(self, session_id: str, recommendation: Recommendation):
-        self.repository[session_id].rejected_recommendations.append(session_id)
+    def set_current_recommendation_for_session(self, session_id: str, rec_id: str):
+        self.session_repository[session_id].current_recommendation_id = rec_id
+
+    def get_current_recommendation_id_for_session(self, session_id: str) -> str:
+        return self.session_repository[session_id].current_recommendation_id
+
+    def add_rejected_recommendation(self, session_id: str, recommendation_id: str):
+        self.session_repository[session_id].rejected_recommendation_ids.append(recommendation_id)
+
+    def add_maybe_recommendation(self, session_id: str, recommendation_id: str):
+        self.session_repository[session_id].maybe_recommendation_ids.append(recommendation_id)
+
+    def clear_all_maybe_recommendations(self, session_id: str):
+        self.session_repository[session_id].maybe_recommendation_ids.clear()
+
+    def set_as_accepted_recommendation(self, session_id: str, recommendation_id: str):
+        self.session_repository[session_id].current_recommendation_id = recommendation_id
+

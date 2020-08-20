@@ -4,6 +4,7 @@ from recommender.data.recommendation.business_search_request import BusinessSear
 
 
 @dataclass
-class RecommendationEngineInput:
-    seen_business_ids: [str]
+class RecommendationRequest:
     search_request: BusinessSearchRequest
+    maybe_recommendation_ids: [str]
+    rejected_recommendation_ids: [str]

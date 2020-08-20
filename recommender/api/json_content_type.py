@@ -16,4 +16,5 @@ def json_content_type(function: Callable[..., object]) -> Callable[..., Response
         response = Response(data_as_json)
         response.mimetype = 'application/json'
         return response
+    wrapped_function.__name__ = function.__name__
     return wrapped_function
