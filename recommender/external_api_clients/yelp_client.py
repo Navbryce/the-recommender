@@ -1,3 +1,4 @@
+import logging
 from typing import TypeVar, Final, Dict
 
 import requests
@@ -11,13 +12,16 @@ from recommender.data.recommendation.displayable_category import DisplayableCate
 from recommender.data.recommendation.filterable_business import FilterableBusiness
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
-from recommender.external_api_clients.page import Page, FIRST_PAGE
+from recommender.external_api_clients.page import Page
 from recommender.external_api_clients.search_client import SearchClient
 
+LOGGER = logging.getLogger(__name__)
+
 BUSINESS_SEARCH_QUERY = gql(
-    """query businessSearch($lat: Float, $long: Float, $limit: Int, $offset: Int) {
+    """query businessSearch($lat: Float, $long: Float, $radius: Float, $limit: Int, $offset: Int) {
     search(latitude: $lat,
             longitude: $long,
+            radius: $radius
             limit: $limit,
             offset: $offset) {
         total
@@ -66,7 +70,7 @@ class YelpClient(SearchClient):
     def business_search(
             self,
             search_params: BusinessSearchRequest,
-            page: Page = FIRST_PAGE
+            page: Page
     ) -> [FilterableBusiness]:
         lat, long = search_params.location
         price_categories_filter = YelpClient.array_to_search_string(
@@ -78,19 +82,34 @@ class YelpClient(SearchClient):
         category_filter = YelpClient.array_to_search_string(search_params.categories)
         attributes_filter = YelpClient.array_to_search_string(search_params.attributes)
         result = self.yelp_graph_api_client.execute(
-            BUSINESS_SEARCH_QUERY, {"lat": lat, "long": long}
+            BUSINESS_SEARCH_QUERY, {
+                "lat": lat,
+                "long": long,
+                "radius": search_params.radius
+            }
         )
         search_result = result["search"]
         return [
-            FilterableBusiness.from_dict(yelp_dict) for yelp_dict in search_result["business"]
+            self.convert_yelp_dict_to_filterable_business(yelp_dict) for yelp_dict in search_result["business"]
         ]
+
+    def convert_yelp_dict_to_filterable_business(self, yelp_dict: Dict) -> FilterableBusiness:
+        try:
+            return FilterableBusiness.from_dict(yelp_dict)
+        except (ValueError, KeyError) as ex:
+            LOGGER.debug(yelp_dict)
+            raise ex
 
     def get_displayable_business(self, business_id: str) -> DisplayableBusiness:
         response = requests.get(f"{self.BASE_URL}/businesses/{business_id}", headers=self.__headers)
-        business_dict = response.json()
-
         response.raise_for_status()
+        try:
+            return self.__get_displayable_business_from_yelp_dict(response.json())
+        except (ValueError, KeyError) as ex:
+            LOGGER.debug(response.json())
+            raise ex
 
+    def __get_displayable_business_from_yelp_dict(self, business_dict: Dict) -> DisplayableBusiness:
         displayable_categories = self.__get_displayable_categories(business_dict['categories'])
 
         address = self.__get_address_from_location_dict(business_dict['location'])
@@ -103,7 +122,7 @@ class YelpClient(SearchClient):
             name=business_dict['name'],
             url=business_dict['url'],
             image_urls=business_dict['photos'],
-            price=PriceCategory.from_api_return_value(business_dict['price']),
+            price=PriceCategory.from_api_return_value(business_dict.get("price")),
             delivery=False,
             pickup=False,
             categories=displayable_categories,
@@ -131,4 +150,3 @@ class YelpClient(SearchClient):
 
     def __get_displayable_categories(self, categories: [Dict]) -> [DisplayableCategory]:
         return [DisplayableCategory(id=category['alias'], label=category['title']) for category in categories]
-
