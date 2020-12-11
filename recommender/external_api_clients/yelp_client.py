@@ -57,7 +57,6 @@ class YelpClient(SearchClient):
             "Content-type": "application/json",
             "Authorization": f"Bearer {api_key}",
         }
-        print(self.__headers)
         yelp_graph_api_transport = RequestsHTTPTransport(
             url=f"{self.BASE_URL}/graphql",
             use_json=True,
@@ -83,7 +82,13 @@ class YelpClient(SearchClient):
         attributes_filter = YelpClient.array_to_search_string(search_params.attributes)
         result = self.yelp_graph_api_client.execute(
             BUSINESS_SEARCH_QUERY,
-            {"lat": lat, "long": long, "radius": search_params.radius},
+            {
+                "term": search_params.search_term,
+                "lat": lat,
+                "long": long,
+                "radius": search_params.radius,
+                "price": price_categories_filter,
+            },
         )
         search_result = result["search"]
 
@@ -132,6 +137,7 @@ class YelpClient(SearchClient):
             url=business_dict["url"],
             image_urls=business_dict["photos"],
             price=PriceCategory.from_api_return_value(business_dict.get("price")),
+            rating=business_dict["rating"],
             delivery=False,
             pickup=False,
             categories=displayable_categories,
