@@ -14,6 +14,7 @@ from recommender.data.recommendation.displayable_category import DisplayableCate
 from recommender.data.recommendation.filterable_business import FilterableBusiness
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
+from recommender.external_api_clients.fetch_utils import retry_request
 from recommender.external_api_clients.page import Page
 from recommender.external_api_clients.search_client import SearchClient
 
@@ -25,7 +26,8 @@ BUSINESS_SEARCH_QUERY = gql(
             longitude: $long,
             radius: $radius
             limit: $limit,
-            offset: $offset) {
+            offset: $offset,
+            open_now: true) {
         total
         business {
             id,
@@ -107,15 +109,24 @@ class YelpClient(SearchClient):
             raise ex
 
     def get_displayable_business(self, business_id: str) -> DisplayableBusiness:
-        response = requests.get(
-            f"{self.BASE_URL}/businesses/{business_id}", headers=self.__headers
+        def request_for_business():
+            response = requests.get(
+                f"{self.BASE_URL}/businesses/{business_id}", headers=self.__headers
+            )
+            response.raise_for_status()
+            try:
+                return self.__get_displayable_business_from_yelp_dict(response.json())
+            except (ValueError, KeyError) as ex:
+                LOGGER.debug(response.json())
+                raise ex
+
+        return retry_request(
+            request_for_business,
+            lambda x: isinstance(x, requests.HTTPError)
+            and x.response.status_code >= 500,
+            max_retries=5,
+            delay=500,
         )
-        response.raise_for_status()
-        try:
-            return self.__get_displayable_business_from_yelp_dict(response.json())
-        except (ValueError, KeyError) as ex:
-            LOGGER.debug(response.json())
-            raise ex
 
     def __get_displayable_business_from_yelp_dict(
         self, business_dict: Dict
@@ -138,6 +149,7 @@ class YelpClient(SearchClient):
             image_urls=business_dict["photos"],
             price=PriceCategory.from_api_return_value(business_dict.get("price")),
             rating=business_dict["rating"],
+            rating_count=business_dict["review_count"],
             delivery=False,
             pickup=False,
             categories=displayable_categories,

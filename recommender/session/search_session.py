@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from recommender.data.recommendation.business_search_request import BusinessSearchRequest
+from recommender.data.recommendation.business_search_request import (
+    BusinessSearchRequest,
+)
 
 
 @dataclass
@@ -16,11 +18,11 @@ class SearchSession:
 
     @property
     def maybe_business_ids(self) -> [str]:
-        return [recommendation.business_id for recommendation in self.maybe_recommendations]
+        return self.current_recommendation_id
 
     @property
     def rejected_business_ids(self) -> [str]:
-        return [recommendation.business_id for recommendation in self.rejected_recommendations]
+        return self.rejected_business_ids
 
     def clone(self) -> SearchSession:
         return SearchSession(**self.__dict__)

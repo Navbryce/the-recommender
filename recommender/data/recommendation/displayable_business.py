@@ -15,6 +15,7 @@ class DisplayableBusiness(Serializable):
     image_urls: [str]
     price: PriceCategory
     rating: float
+    rating_count: int
 
     delivery: bool
     pickup: bool

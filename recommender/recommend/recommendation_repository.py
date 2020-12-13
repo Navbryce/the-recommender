@@ -9,5 +9,5 @@ class RecommendationRepository(ABC):
         pass
 
     @abstractmethod
-    def get_recommendations(self, recommendation_ids: [str]):
+    def get_recommendations(self, session_id: str, business_ids: [str]):
         pass

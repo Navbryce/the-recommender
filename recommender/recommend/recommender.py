@@ -32,7 +32,9 @@ class Recommender:
         business_to_recommend = potential_businesses_to_recommend[
             random.randint(0, len(potential_businesses_to_recommend) - 1)
         ]
-        return self.generate_detailed_recommendation(business_to_recommend)
+        return self.generate_detailed_recommendation(
+            business_to_recommend, recommendation_input.session_id
+        )
 
     def fetch_unseen_businesses(
         self, recommendation_input: RecommendationEngineInput, target_amount
@@ -72,13 +74,13 @@ class Recommender:
         return self._search_client.business_search(search_params, page)
 
     def generate_detailed_recommendation(
-        self, filterable_business: FilterableBusiness
+        self, filterable_business: FilterableBusiness, session_id: str
     ) -> DisplayableRecommendation:
         displayable_business = self._search_client.get_displayable_business(
             filterable_business.id
         )
         return DisplayableRecommendation(
-            id=str(uuid4()),
+            session_id=session_id,
             business=displayable_business,
             distance=filterable_business.distance,
         )
