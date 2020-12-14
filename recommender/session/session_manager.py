@@ -49,8 +49,8 @@ class SessionManager:
         if current_recommendation_id != current_session.current_recommendation_id:
             raise ValueError(
                 f"Attempting to {recommendation_action} recommendation of id {current_recommendation_id}"
-                f" but current recommendation is {current_session.id} for "
-                f"session {current_session.current_recommendation_id}"
+                f" but current recommendation is {current_session.current_recommendation_id} for "
+                f"session {current_session.id}"
             )
 
         if recommendation_action == RecommendationAction.MAYBE:
@@ -74,17 +74,18 @@ class SessionManager:
         business_recommendation: DisplayableRecommendation = self.__recommendation_manager.generate_recommendation(
             session
         )
-
         self.__session_repository.set_current_recommendation_for_session(
             session.id, business_recommendation.business_id
         )
         return business_recommendation
 
     def accept_recommendation(self, session_id, accepted_rec_id):
-        current_session = self.__session_repository.get_session(session_id)
+        current_session: SearchSession = self.__session_repository.get_session(
+            session_id
+        )
         if (
-            accepted_rec_id is not current_session.id
-            and accepted_rec_id not in current_session.maybe_recommendations
+            accepted_rec_id is not current_session.current_recommendation_id
+            and accepted_rec_id not in current_session.maybe_business_ids
         ):
             raise ValueError(
                 f"Unknown recommendation of id {accepted_rec_id} for session {current_session.id}"
@@ -95,7 +96,7 @@ class SessionManager:
         )
 
         possible_recommendations_to_reject = current_session.maybe_recommendation_ids.concat(
-            [current_session.current_recommendation.id]
+            [current_session.current_recommendation_id]
         )
         recommendation_ids_to_reject = [
             rec_id

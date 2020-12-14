@@ -2,10 +2,11 @@ from dataclasses import dataclass
 
 from recommender.data.recommendation.displayable_business import DisplayableBusiness
 from recommender.data.recommendation.recommendation import Recommendation
+from recommender.data.serializable import Serializable
 
 
 @dataclass
-class DisplayableRecommendation(Recommendation):
+class DisplayableRecommendation(Recommendation, Serializable):
     business: DisplayableBusiness
 
     def __init__(
