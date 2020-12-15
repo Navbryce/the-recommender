@@ -12,6 +12,7 @@ from recommender.data.recommendation.business_search_request import (
 class SearchSession:
     id: str
     search_request: BusinessSearchRequest
+    accepted_recommendation_id: Optional[str] = None
     current_recommendation_id: Optional[str] = None
     maybe_recommendation_ids: [str] = field(default_factory=list)
     rejected_recommendation_ids: [str] = field(default_factory=list)

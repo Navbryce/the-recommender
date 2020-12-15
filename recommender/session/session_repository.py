@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Union, Optional
 
 from recommender.session.search_session import SearchSession
 
@@ -21,7 +22,9 @@ class SessionRepository(ABC):
         pass
 
     @abstractmethod
-    def set_current_recommendation_for_session(self, session_id: str, recommendation_id: str):
+    def set_current_recommendation_for_session(
+        self, session_id: str, recommendation_id: Optional[str]
+    ):
         pass
 
     @abstractmethod
@@ -47,5 +50,3 @@ class SessionRepository(ABC):
     def add_rejected_recommendations(self, session_id: str, recommendation_ids: [str]):
         for recommendation_id in recommendation_ids:
             self.add_rejected_recommendation(session_id, recommendation_id)
-
-

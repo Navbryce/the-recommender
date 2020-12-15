@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from flask import Blueprint, request, Response
 
@@ -48,7 +49,7 @@ def new_business_search() -> SessionCreationResponse:
 
 @business_search.route("/<session_id>", methods=["POST"])
 @json_content_type
-def next_recommendation(session_id: str) -> DisplayableRecommendation:
+def apply_recommendation_action(session_id: str) -> Optional[DisplayableRecommendation]:
     recommendation_action_as_string = request.json["recommendationAction"]
     current_recommendation_id = request.json["currentRecommendationId"]
 
@@ -61,9 +62,12 @@ def next_recommendation(session_id: str) -> DisplayableRecommendation:
         recommendation_action_as_string
     ]
 
-    recommendation = session_manager.get_next_recommendation(
-        session_id=session_id,
-        current_recommendation_id=current_recommendation_id,
-        recommendation_action=recommendation_action,
-    )
-    return recommendation
+    if recommendation_action == RecommendationAction.ACCEPT:
+        session_manager.accept_recommendation(session_id, current_recommendation_id)
+        return None
+    else:
+        return session_manager.get_next_recommendation(
+            session_id=session_id,
+            current_recommendation_id=current_recommendation_id,
+            recommendation_action=recommendation_action,
+        )

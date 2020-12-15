@@ -95,16 +95,20 @@ class SessionManager:
             session_id, accepted_rec_id
         )
 
-        possible_recommendations_to_reject = current_session.maybe_recommendation_ids.concat(
-            [current_session.current_recommendation_id]
+        possible_recommendations_to_reject = (
+            current_session.maybe_recommendation_ids
+            + [current_session.current_recommendation_id]
         )
+
         recommendation_ids_to_reject = [
             rec_id
             for rec_id in possible_recommendations_to_reject
             if rec_id != accepted_rec_id
         ]
 
-        self.__session_repository.set_current_recommendation_for_session(None)
+        self.__session_repository.set_current_recommendation_for_session(
+            session_id, None
+        )
         self.__session_repository.add_rejected_recommendations(
             session_id, recommendation_ids_to_reject
         )
