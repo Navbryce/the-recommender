@@ -37,6 +37,19 @@ class SessionManager:
             self.__session_repository.get_session(session_id)
         )
 
+    def reject_maybe_recommendation(self, session_id: str, recommendation_id: str):
+        current_session: SearchSession = self.__session_repository.get_session(
+            session_id
+        )
+
+        if recommendation_id not in current_session.maybe_business_ids:
+            raise ValueError(
+                f"Could not find a recommendation {recommendation_id} in maybe recommendations for session {session_id}"
+            )
+        self.__session_repository.set_maybe_recommendation_to_rejected(
+            session_id, recommendation_id
+        )
+
     def get_next_recommendation(
         self,
         session_id: str,

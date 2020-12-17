@@ -40,6 +40,12 @@ class SessionRepository(ABC):
         pass
 
     @abstractmethod
+    def set_maybe_recommendation_to_rejected(
+        self, session_id: str, recommendation_id: str
+    ):
+        pass
+
+    @abstractmethod
     def clear_all_maybe_recommendations(self, session_id: str):
         pass
 

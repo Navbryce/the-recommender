@@ -51,7 +51,7 @@ def new_business_search() -> SessionCreationResponse:
 @json_content_type
 def apply_recommendation_action(session_id: str) -> Optional[DisplayableRecommendation]:
     recommendation_action_as_string = request.json["recommendationAction"]
-    current_recommendation_id = request.json["currentRecommendationId"]
+    recommendation_id = request.json["recommendationId"]
 
     if recommendation_action_as_string not in RecommendationAction.__members__:
         raise ValueError(
@@ -63,11 +63,20 @@ def apply_recommendation_action(session_id: str) -> Optional[DisplayableRecommen
     ]
 
     if recommendation_action == RecommendationAction.ACCEPT:
-        session_manager.accept_recommendation(session_id, current_recommendation_id)
+        session_manager.accept_recommendation(session_id, recommendation_id)
         return None
-    else:
+
+    is_current = request.json["isCurrent"]
+    if is_current:
         return session_manager.get_next_recommendation(
             session_id=session_id,
-            current_recommendation_id=current_recommendation_id,
+            current_recommendation_id=recommendation_id,
             recommendation_action=recommendation_action,
         )
+    else:
+        if recommendation_action == RecommendationAction.MAYBE:
+            raise ValueError(
+                'Cannot "Maybe" a recommendation that has already had the action applied to it'
+            )
+        session_manager.reject_maybe_recommendation(session_id, recommendation_id)
+        return None

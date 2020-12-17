@@ -19,11 +19,11 @@ class SearchSession:
 
     @property
     def maybe_business_ids(self) -> [str]:
-        return self.current_recommendation_id
+        return self.maybe_recommendation_ids
 
     @property
     def rejected_business_ids(self) -> [str]:
-        return self.rejected_business_ids
+        return self.rejected_recommendation_ids
 
     def clone(self) -> SearchSession:
         return SearchSession(**self.__dict__)
