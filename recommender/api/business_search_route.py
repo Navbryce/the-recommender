@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-from flask import Blueprint, request, Response
+from flask import Blueprint, request
 
 from recommender.api.json_content_type import json_content_type
 from recommender.data.recommendation.business_search_request import (
@@ -13,12 +13,8 @@ from recommender.data.recommendation.displayable_recommendation import (
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 from recommender.data.session_creation_response import SessionCreationResponse
 from recommender.external_api_clients.yelp_client import YelpClient
-from recommender.recommend.in_memory_recommendation_repository import (
-    InMemoryRecommendationRepository,
-)
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.recommend.recommender import Recommender
-from recommender.session.in_memory_session_repository import InMemorySessionRepository
 from recommender.session.session_manager import SessionManager
 
 business_search = Blueprint("business_search", __name__)
@@ -26,12 +22,8 @@ business_search = Blueprint("business_search", __name__)
 api_key = os.environ["YELP_API_KEY"]
 yelp_client: YelpClient = YelpClient(api_key)
 recommender: Recommender = Recommender(yelp_client)
-recommendation_manager: RecommendationManager = RecommendationManager(
-    recommender, InMemoryRecommendationRepository()
-)
-session_manager: SessionManager = SessionManager(
-    recommendation_manager, InMemorySessionRepository()
-)
+recommendation_manager: RecommendationManager = RecommendationManager(recommender)
+session_manager: SessionManager = SessionManager(recommendation_manager)
 
 
 @business_search.route("", methods=["POST"])

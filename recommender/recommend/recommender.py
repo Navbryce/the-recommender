@@ -2,7 +2,6 @@ import math
 import random
 from logging import warning
 from typing import Final
-from uuid import uuid4
 
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
@@ -11,9 +10,9 @@ from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
 )
 from recommender.data.recommendation.filterable_business import FilterableBusiness
-from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
-from recommender.external_api_clients.search_client import SearchClient
 from recommender.external_api_clients.page import Page
+from recommender.external_api_clients.search_client import SearchClient
+from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
 
 
 class Recommender:

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
-from recommender.data.serializable import Serializable
+from recommender.data.serializable import serializable
 
 
+@serializable
 @dataclass
-class Address(Serializable):
+class Address:
     country: str
     region: str
     city: str

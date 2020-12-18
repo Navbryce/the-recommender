@@ -73,7 +73,9 @@ class YelpClient(SearchClient):
     def business_search(
         self, search_params: BusinessSearchRequest, page: Page
     ) -> [FilterableBusiness]:
-        lat, long = search_params.location
+        lat = search_params.location.lat
+        long = search_params.location.long
+
         price_categories_filter = YelpClient.array_to_search_string(
             [
                 priceCategory.get_yelp_api_filter_value()

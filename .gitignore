@@ -100,8 +100,10 @@ ENV/
 
 # ide
 .idea/
-
-**/**.swp
+*.swp
 
 # build pipeline
 .travis.yml.swp
+
+# databases
+*.db

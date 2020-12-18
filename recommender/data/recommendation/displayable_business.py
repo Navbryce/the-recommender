@@ -4,11 +4,12 @@ from recommender.data.recommendation.address import Address
 from recommender.data.recommendation.displayable_category import DisplayableCategory
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
-from recommender.data.serializable import Serializable
+from recommender.data.serializable import serializable
 
 
+@serializable
 @dataclass
-class DisplayableBusiness(Serializable):
+class DisplayableBusiness:
     id: str
     name: str
     url: str
