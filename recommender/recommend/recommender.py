@@ -10,6 +10,7 @@ from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
 )
 from recommender.data.recommendation.filterable_business import FilterableBusiness
+from recommender.data.recommendation.recommendation import Recommendation
 from recommender.external_api_clients.page import Page
 from recommender.external_api_clients.search_client import SearchClient
 from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
@@ -24,18 +25,20 @@ class Recommender:
 
     def recommend(
         self, recommendation_input: RecommendationEngineInput
-    ) -> DisplayableRecommendation:
-        potential_businesses_to_recommend = self.fetch_unseen_businesses(
+    ) -> Recommendation:
+        potential_businesses_to_recommend = self.__fetch_unseen_businesses(
             recommendation_input, target_amount=20
         )
-        business_to_recommend = potential_businesses_to_recommend[
+        business_to_recommend: FilterableBusiness = potential_businesses_to_recommend[
             random.randint(0, len(potential_businesses_to_recommend) - 1)
         ]
-        return self.generate_detailed_recommendation(
-            business_to_recommend, recommendation_input.session_id
+        return Recommendation(
+            session_id=recommendation_input.session_id,
+            business_id=business_to_recommend.id,
+            distance=business_to_recommend.distance,
         )
 
-    def fetch_unseen_businesses(
+    def __fetch_unseen_businesses(
         self, recommendation_input: RecommendationEngineInput, target_amount
     ) -> [FilterableBusiness]:
         seen_business_ids = recommendation_input.seen_business_ids
@@ -47,7 +50,7 @@ class Recommender:
         while len(potential_recommendations) < target_amount:
             if iteration_counter >= self.__MAX_FETCHES:
                 break
-            raw_businesses = self.fetch_raw_businesses(
+            raw_businesses = self.__fetch_raw_businesses(
                 recommendation_input.search_request, current_page
             )
             if len(raw_businesses) == 0:
@@ -67,7 +70,7 @@ class Recommender:
             )
         return potential_recommendations
 
-    def fetch_raw_businesses(
+    def __fetch_raw_businesses(
         self, search_params: BusinessSearchRequest, page: Page
     ) -> [FilterableBusiness]:
         return self._search_client.business_search(search_params, page)

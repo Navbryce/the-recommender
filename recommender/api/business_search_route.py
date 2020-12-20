@@ -15,6 +15,7 @@ from recommender.data.session_creation_response import SessionCreationResponse
 from recommender.external_api_clients.yelp_client import YelpClient
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.recommend.recommender import Recommender
+from recommender.session.displayable_search_session import DisplayableSearchSession
 from recommender.session.session_manager import SessionManager
 
 business_search = Blueprint("business_search", __name__)
@@ -22,13 +23,15 @@ business_search = Blueprint("business_search", __name__)
 api_key = os.environ["YELP_API_KEY"]
 yelp_client: YelpClient = YelpClient(api_key)
 recommender: Recommender = Recommender(yelp_client)
-recommendation_manager: RecommendationManager = RecommendationManager(recommender)
+recommendation_manager: RecommendationManager = RecommendationManager(
+    yelp_client, recommender
+)
 session_manager: SessionManager = SessionManager(recommendation_manager)
 
 
 @business_search.route("", methods=["POST"])
 @json_content_type
-def new_business_search() -> SessionCreationResponse:
+def new_search_session() -> SessionCreationResponse:
     search_request = BusinessSearchRequest.from_dict(request.json)
     session = session_manager.new_session(search_request)
     business_recommendation: DisplayableRecommendation = session_manager.get_first_recommendation(
@@ -37,6 +40,12 @@ def new_business_search() -> SessionCreationResponse:
     return SessionCreationResponse(
         session_id=session.id, recommendation=business_recommendation
     )
+
+
+@business_search.route("/<session_id>", methods=["GET"])
+@json_content_type
+def get_session(session_id: str) -> DisplayableSearchSession:
+    return session_manager.get_displayable_session(session_id)
 
 
 @business_search.route("/<session_id>", methods=["POST"])

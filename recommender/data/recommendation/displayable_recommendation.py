@@ -8,7 +8,6 @@ from recommender.data.serializable import serializable
 @serializable
 @dataclass
 class DisplayableRecommendation(Recommendation):
-    __mapper_args__ = {"polymorphic_identity": "Recommendation"}
     business: DisplayableBusiness
     session_id: str
     distance: float

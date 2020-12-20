@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Final
+from typing import Final, Union, List
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -14,6 +14,7 @@ from recommender.data.recommendation.recommendation import Recommendation
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 from recommender.db_config import DbSession, engine, DbBase
 from recommender.recommend.recommendation_manager import RecommendationManager
+from recommender.session.displayable_search_session import DisplayableSearchSession
 from recommender.session.search_session import SearchSession
 
 
@@ -23,6 +24,47 @@ class SessionManager:
     def __init__(self, recommendation_manager: RecommendationManager) -> None:
         # init tables (after everything has been imported by the services)
         self.__recommendation_manager = recommendation_manager
+
+    __RECOMMENDATION_KEYS = [
+        "current_recommendation",
+        "accepted_recommendation",
+        "maybe_recommendations",
+        "rejected_recommendations",
+    ]
+
+    def get_displayable_session(self, session_id: str) -> DisplayableSearchSession:
+        db_session = DbSession()
+        search_session = SearchSession.get_session_by_id(db_session, session_id)
+        # parallelize
+        displayable_recommendations_dict = {}
+        for recommendation_key in self.__RECOMMENDATION_KEYS:
+            recommendation_or_recommendations: Union[
+                Recommendation, List[Recommendation]
+            ] = getattr(search_session, recommendation_key)
+            if not isinstance(recommendation_or_recommendations, list):
+                if recommendation_or_recommendations is None:
+                    continue
+                displayable_recommendations_dict[
+                    recommendation_key
+                ] = self.__recommendation_manager.get_displayable_recommendation_from_recommendation(
+                    recommendation_or_recommendations
+                )
+            else:
+                displayable_recommendations = [
+                    self.__recommendation_manager.get_displayable_recommendation_from_recommendation(
+                        recommendation
+                    )
+                    for recommendation in recommendation_or_recommendations
+                ]
+                displayable_recommendations_dict[
+                    recommendation_key
+                ] = displayable_recommendations
+
+        return DisplayableSearchSession(
+            id=session_id,
+            search_request=search_session.search_request,
+            **displayable_recommendations_dict,
+        )
 
     def new_session(self, search_request: BusinessSearchRequest) -> SearchSession:
         session_id = str(uuid4())
@@ -129,4 +171,4 @@ class SessionManager:
                 db_session, session_id, rec_id
             ).status = RecommendationAction.REJECT
 
-        db_session.flush()
+        db_session.commit()
