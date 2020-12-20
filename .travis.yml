@@ -3,6 +3,7 @@ python:
 - 3.8.5
 install:
 - pip install pipenv
+- pipenv install
 stages:
 - tests
 - deploy
@@ -13,14 +14,11 @@ jobs:
   include:
   - stage: tests
     script:
-    - pipenv sync --dev
     - pytest ./tests/
     - echo 'Dependencies installed:'
     - cat Pipfile.lock
   - stage: deploy
     script:
-    - pipenv lock --clear
-    - pipenv sync
     - pipenv lock -r > requirements.txt
     - echo 'Dependencies installed:'
     - cat Pipfile.lock
