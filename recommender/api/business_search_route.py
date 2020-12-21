@@ -30,7 +30,7 @@ session_manager: SessionManager = SessionManager(recommendation_manager)
 
 
 @business_search.route("", methods=["POST"])
-@json_content_type
+@json_content_type()
 def new_search_session() -> SessionCreationResponse:
     search_request = BusinessSearchRequest.from_dict(request.json)
     session = session_manager.new_session(search_request)
@@ -43,13 +43,14 @@ def new_search_session() -> SessionCreationResponse:
 
 
 @business_search.route("/<session_id>", methods=["GET"])
-@json_content_type
+@json_content_type()
 def get_session(session_id: str) -> DisplayableSearchSession:
-    return session_manager.get_displayable_session(session_id)
+    out = session_manager.get_displayable_session(session_id)
+    return out
 
 
 @business_search.route("/<session_id>", methods=["POST"])
-@json_content_type
+@json_content_type()
 def apply_recommendation_action(session_id: str) -> Optional[DisplayableRecommendation]:
     recommendation_action_as_string = request.json["recommendationAction"]
     recommendation_id = request.json["recommendationId"]

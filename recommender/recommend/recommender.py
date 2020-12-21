@@ -3,6 +3,9 @@ import random
 from logging import warning
 from typing import Final
 
+from werkzeug.exceptions import NotFound
+
+from recommender.api.http_exception import HttpException, ErrorCode
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -63,7 +66,11 @@ class Recommender:
             current_page = current_page.next_page()
             iteration_counter += 1
         if len(potential_recommendations) == 0:
-            raise ValueError("No businesses found. Try different criteria.")
+            raise HttpException(
+                message="No businesses found. Try different parameters",
+                status_code=404,
+                error_code=ErrorCode.NO_BUSINESSES_FOUND,
+            )
         elif len(potential_recommendations) < target_amount:
             warning(
                 f"Target amount of {target_amount} not reached. Actual: {len(potential_recommendations)}"

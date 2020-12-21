@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict, TypeVar, Type, Callable
 
 
@@ -7,6 +8,10 @@ def to_camel_case(value: str) -> str:
 
 
 T = TypeVar("T")
+
+
+def get_enum_state(self: Enum):
+    return self.name
 
 
 def serializable(cls: Type[T], get_serializable_attributes: Callable[[T], Dict] = None):

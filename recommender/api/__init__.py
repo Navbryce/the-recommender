@@ -33,8 +33,21 @@ def start_api(test_config=None):
     # init tables (after everything has been imported by the services)
     DbBase.metadata.create_all(engine)
 
+    @app.errorhandler(recommender.api.http_exception.HttpException)
+    @json_content_type(include_status_code=True)
+    def handle_http_exception(error: recommender.api.http_exception.HttpException):
+        return (
+            {
+                "message": error.message,
+                "errorCode": None
+                if error.error_code is None
+                else error.error_code.value,
+            },
+            error.status_code,
+        )
+
     @app.route("/wake", methods=["GET"])
-    @json_content_type
+    @json_content_type()
     def wake():
         # this route exists to spin up the backend server when the user loads the site
         return None
