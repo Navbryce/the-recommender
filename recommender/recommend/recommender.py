@@ -3,6 +3,7 @@ import random
 from logging import warning
 from typing import Final
 
+from fuzzywuzzy import fuzz
 from werkzeug.exceptions import NotFound
 
 from recommender.api.http_exception import HttpException, ErrorCode
@@ -32,9 +33,18 @@ class Recommender:
         potential_businesses_to_recommend = self.__fetch_unseen_businesses(
             recommendation_input, target_amount=20
         )
-        business_to_recommend: FilterableBusiness = potential_businesses_to_recommend[
-            random.randint(0, len(potential_businesses_to_recommend) - 1)
-        ]
+        if len(recommendation_input.search_request.search_term) == 0:
+            business_to_recommend: FilterableBusiness = potential_businesses_to_recommend[
+                random.randint(0, len(potential_businesses_to_recommend) - 1)
+            ]
+        else:
+            business_to_recommend: FilterableBusiness = sorted(
+                potential_businesses_to_recommend,
+                key=lambda business: fuzz.partial_ratio(
+                    recommendation_input.search_request.search_term, business.name
+                ),
+                reverse=True,
+            )[0]
         return Recommendation(
             session_id=recommendation_input.session_id,
             business_id=business_to_recommend.id,

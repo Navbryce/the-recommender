@@ -4,14 +4,13 @@ from sqlalchemy import Column, String, Float, PickleType, ForeignKey
 from sqlalchemy.orm import composite
 
 from recommender.data.serializable import serializable
-from recommender.data.persistence_object import PersistenceObject
 from recommender.db_config import DbBase
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
 
 
 @serializable
-class BusinessSearchRequest(DbBase, PersistenceObject):
+class BusinessSearchRequest(DbBase):
     __tablename__ = "search_request"
 
     @staticmethod

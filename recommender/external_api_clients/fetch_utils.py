@@ -19,5 +19,5 @@ def retry_request(
         except (HTTPError, Timeout) as error:
             if not should_retry(error):
                 raise error
-            sleep(delay)
+            sleep(delay / 1000.0)
         retries += 1

@@ -5,12 +5,11 @@ from typing import Optional
 from sqlalchemy import Column, String, Float, ForeignKey, Enum
 from sqlalchemy.orm import Session
 
-from recommender.data.persistence_object import PersistenceObject
 from recommender.db_config import DbBase
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 
 
-class Recommendation(DbBase, PersistenceObject):
+class Recommendation(DbBase):
     @staticmethod
     def get_recommendation_by_key(
         db_session: Session, session_id: str, business_id: str

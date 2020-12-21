@@ -5,7 +5,6 @@ from typing import Optional
 from sqlalchemy import String, Column
 from sqlalchemy.orm import relationship, Session
 
-from recommender.data.persistence_object import PersistenceObject
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -26,7 +25,7 @@ def generate_recommendation_join_on_status(
 
 
 @serializable
-class SearchSession(DbBase, PersistenceObject):
+class SearchSession(DbBase):
     @staticmethod
     def get_session_by_id(db_session: Session, session_id: str) -> SearchSession:
         return db_session.query(SearchSession).filter_by(id=session_id).first()

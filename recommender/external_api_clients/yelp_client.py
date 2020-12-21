@@ -21,10 +21,12 @@ from recommender.external_api_clients.search_client import SearchClient
 LOGGER = logging.getLogger(__name__)
 
 BUSINESS_SEARCH_QUERY = gql(
-    """query businessSearch($lat: Float, $long: Float, $radius: Float, $limit: Int, $offset: Int) {
+    """query businessSearch($lat: Float, $long: Float, $radius: Float, $searchTerm: String, $price: String, $limit: Int, $offset: Int) {
     search(latitude: $lat,
             longitude: $long,
-            radius: $radius
+            radius: $radius,
+            term: $searchTerm
+            price: $price,
             limit: $limit,
             offset: $offset,
             open_now: true) {
@@ -90,6 +92,7 @@ class YelpClient(SearchClient):
                 "term": search_params.search_term,
                 "lat": lat,
                 "long": long,
+                "searchTerm": search_params.search_term,
                 "radius": search_params.radius,
                 "price": price_categories_filter,
             },
