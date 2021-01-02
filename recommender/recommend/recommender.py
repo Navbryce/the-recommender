@@ -13,7 +13,7 @@ from recommender.data.recommendation.business_search_request import (
 from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
 )
-from recommender.data.recommendation.filterable_business import FilterableBusiness
+from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.recommendation import Recommendation
 from recommender.external_api_clients.page import Page
 from recommender.external_api_clients.search_client import SearchClient
@@ -34,11 +34,11 @@ class Recommender:
             recommendation_input, target_amount=20
         )
         if len(recommendation_input.search_request.search_term) == 0:
-            business_to_recommend: FilterableBusiness = potential_businesses_to_recommend[
+            business_to_recommend: RecommendableBusiness = potential_businesses_to_recommend[
                 random.randint(0, len(potential_businesses_to_recommend) - 1)
             ]
         else:
-            business_to_recommend: FilterableBusiness = sorted(
+            business_to_recommend: RecommendableBusiness = sorted(
                 potential_businesses_to_recommend,
                 key=lambda business: fuzz.partial_ratio(
                     recommendation_input.search_request.search_term, business.name
@@ -49,11 +49,12 @@ class Recommender:
             session_id=recommendation_input.session_id,
             business_id=business_to_recommend.id,
             distance=business_to_recommend.distance,
+            business_data_for_recommendation=business_to_recommend,
         )
 
     def __fetch_unseen_businesses(
         self, recommendation_input: RecommendationEngineInput, target_amount
-    ) -> [FilterableBusiness]:
+    ) -> [RecommendableBusiness]:
         seen_business_ids = recommendation_input.seen_business_ids
 
         potential_recommendations = []
@@ -68,9 +69,13 @@ class Recommender:
             )
             if len(raw_businesses) == 0:
                 break
+            seen_business_names = recommendation_input.normalized_seen_business_names
             unseen_businesses = list(
-                filter(lambda x: x.id not in seen_business_ids, raw_businesses)
+                filter(
+                    lambda x: x.name.lower() not in seen_business_names, raw_businesses
+                )
             )
+
             potential_recommendations = potential_recommendations + unseen_businesses
 
             current_page = current_page.next_page()
@@ -89,11 +94,11 @@ class Recommender:
 
     def __fetch_raw_businesses(
         self, search_params: BusinessSearchRequest, page: Page
-    ) -> [FilterableBusiness]:
+    ) -> [RecommendableBusiness]:
         return self._search_client.business_search(search_params, page)
 
     def generate_detailed_recommendation(
-        self, filterable_business: FilterableBusiness, session_id: str
+        self, filterable_business: RecommendableBusiness, session_id: str
     ) -> DisplayableRecommendation:
         displayable_business = self._search_client.get_displayable_business(
             filterable_business.id

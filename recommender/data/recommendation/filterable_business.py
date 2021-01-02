@@ -3,8 +3,13 @@ from dataclasses import dataclass
 from recommender.data.recommendation.price import PriceCategory
 
 
+"""
+Current representation of a business used to determine if it can be recommended
+"""
+
+
 @dataclass
-class FilterableBusiness:
+class RecommendableBusiness:
     @classmethod
     def from_dict(cls, yelp_dict):
         id = yelp_dict["id"]
@@ -21,12 +26,14 @@ class FilterableBusiness:
 
         distance = yelp_dict["distance"]
 
-        return FilterableBusiness(id=id,
-                                  name=name,
-                                  url=url,
-                                  rating=rating,
-                                  price_category=price_category,
-                                  distance=distance)
+        return RecommendableBusiness(
+            id=id,
+            name=name,
+            url=url,
+            rating=rating,
+            price_category=price_category,
+            distance=distance,
+        )
 
     id: str
     name: str

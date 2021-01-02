@@ -29,3 +29,13 @@ class RecommendationEngineInput:
     @property
     def seen_business_ids(self):
         return self.rejected_business_ids + self.maybe_business_ids
+
+    @property
+    def normalized_seen_business_names(self):
+        return set(
+            [
+                recommendation.business_data_for_recommendation.name.lower()
+                for recommendation in self.rejected_recommendations
+                + self.maybe_recommendations
+            ]
+        )

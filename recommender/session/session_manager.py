@@ -131,14 +131,14 @@ class SessionManager:
     def __get_next_recommendation_for_session(
         self, db_session: Session, search_session: SearchSession
     ):
-        displayable_business_recommendation: DisplayableRecommendation = self.__recommendation_manager.generate_new_recommendation_for_session(
+        recommendation: Recommendation = self.__recommendation_manager.generate_new_recommendation_for_session(
             search_session
         )
-        search_session.current_recommendation = (
-            displayable_business_recommendation.as_recommendation()
-        )
+        search_session.current_recommendation = recommendation
         db_session.commit()
-        return displayable_business_recommendation
+        return self.__recommendation_manager.get_displayable_recommendation_from_recommendation(
+            recommendation
+        )
 
     def accept_recommendation(self, session_id, accepted_rec_id):
         db_session = DbSession()

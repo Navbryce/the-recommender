@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import Column, String, Float, ForeignKey, Enum
+from sqlalchemy import Column, String, Float, ForeignKey, Enum, PickleType
 from sqlalchemy.orm import Session
 
+from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.db_config import DbBase
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 
@@ -29,4 +30,12 @@ class Recommendation(DbBase):
     distance: float = Column(Float)
     status: Optional[RecommendationAction] = Column(
         Enum(RecommendationAction), default=None
+    )
+
+    """ 
+    currently store the information used to determine if a business can be recommended with the 
+    recommendation (in case the business changes with time)
+    """
+    business_data_for_recommendation: RecommendableBusiness = Column(
+        PickleType, nullable=False
     )

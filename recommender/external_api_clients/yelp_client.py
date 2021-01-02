@@ -11,7 +11,7 @@ from recommender.data.recommendation.business_search_request import (
 )
 from recommender.data.recommendation.displayable_business import DisplayableBusiness
 from recommender.data.recommendation.displayable_category import DisplayableCategory
-from recommender.data.recommendation.filterable_business import FilterableBusiness
+from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
 from recommender.external_api_clients.fetch_utils import retry_request
@@ -74,7 +74,7 @@ class YelpClient(SearchClient):
 
     def business_search(
         self, search_params: BusinessSearchRequest, page: Page
-    ) -> [FilterableBusiness]:
+    ) -> [RecommendableBusiness]:
         lat = search_params.location.lat
         long = search_params.location.long
 
@@ -106,9 +106,9 @@ class YelpClient(SearchClient):
 
     def convert_yelp_dict_to_filterable_business(
         self, yelp_dict: Dict
-    ) -> FilterableBusiness:
+    ) -> RecommendableBusiness:
         try:
-            return FilterableBusiness.from_dict(yelp_dict)
+            return RecommendableBusiness.from_dict(yelp_dict)
         except (ValueError, KeyError) as ex:
             LOGGER.debug(yelp_dict)
             raise ex

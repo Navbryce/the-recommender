@@ -1,28 +1,19 @@
 from dataclasses import dataclass
 
 from recommender.data.recommendation.displayable_business import DisplayableBusiness
-from recommender.data.recommendation.recommendation import Recommendation
 from recommender.data.serializable import serializable
 
 
 @serializable
 @dataclass
-class DisplayableRecommendation(Recommendation):
+class DisplayableRecommendation:
     business: DisplayableBusiness
     session_id: str
+    business_id: str
     distance: float
 
-    def __init__(
-        self, session_id: str, business: DisplayableBusiness, distance: float
-    ) -> None:
-        super().__init__(
-            session_id=session_id, business_id=business.id, distance=distance
-        )
+    def __init__(self, business: DisplayableBusiness, session_id: str, distance: float):
         self.business = business
-
-    def as_recommendation(self) -> Recommendation:
-        return Recommendation(
-            session_id=self.session_id,
-            business_id=self.business.id,
-            distance=self.distance,
-        )
+        self.session_id = session_id
+        self.distance = distance
+        self.business_id = business.id
