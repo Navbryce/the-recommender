@@ -14,9 +14,9 @@ from recommender.data.recommendation.displayable_category import DisplayableCate
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
-from recommender.external_api_clients.fetch_utils import retry_request
-from recommender.external_api_clients.page import Page
-from recommender.external_api_clients.search_client import SearchClient
+from recommender.business.fetch_utils import retry_request
+from recommender.business.page import Page
+from recommender.business.search_client import SearchClient
 
 LOGGER = logging.getLogger(__name__)
 

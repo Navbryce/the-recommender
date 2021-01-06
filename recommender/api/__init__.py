@@ -4,11 +4,11 @@ from flask import Flask
 # We need to use an external dependency for env management because pycharm does not currently support .env files
 from flask_cors import CORS
 
-from recommender.api.json_content_type import json_content_type
+from recommender.api.utils.json_content_type import json_content_type
 
 load_dotenv(verbose=True)
 
-import recommender.api.json_encode_config
+import recommender.api.utils.json_encode_config
 
 from recommender.db_config import DbBase, engine
 
@@ -20,8 +20,10 @@ def start_api(test_config=None):
 
     # import blue prints
     from recommender.api.business_search_route import business_search
+    from recommender.api.rcv_route import rcv
 
     app.register_blueprint(business_search, url_prefix="/business-search")
+    app.register_blueprint(rcv, url_prefix="/rcv")
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -33,9 +35,11 @@ def start_api(test_config=None):
     # init tables (after everything has been imported by the services)
     DbBase.metadata.create_all(engine)
 
-    @app.errorhandler(recommender.api.http_exception.HttpException)
+    @app.errorhandler(recommender.api.utils.http_exception.HttpException)
     @json_content_type(include_status_code=True)
-    def handle_http_exception(error: recommender.api.http_exception.HttpException):
+    def handle_http_exception(
+        error: recommender.api.utils.http_exception.HttpException
+    ):
         return (
             {
                 "message": error.message,

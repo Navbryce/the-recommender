@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
-from recommender.api.http_exception import HttpException, ErrorCode
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -13,7 +12,7 @@ from recommender.data.recommendation.displayable_recommendation import (
 )
 from recommender.data.recommendation.recommendation import Recommendation
 from recommender.data.recommendation.recommendation_action import RecommendationAction
-from recommender.db_config import DbSession, engine, DbBase
+from recommender.db_config import DbSession
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.session.displayable_search_session import DisplayableSearchSession
 from recommender.session.search_session import SearchSession

@@ -1,7 +1,9 @@
-from enum import Enum
+from enum import Enum, unique
 
 
+@unique
 class ElectionStatus(Enum):
-    ACTIVE = "ACTIVE"
+    IN_CREATION = "CREATION"
+    VOTING = "VOTING"
     MARKED_COMPLETE = "MARKED_COMPLETE"
     MANUALLY_COMPLETE = "COMPLETE"

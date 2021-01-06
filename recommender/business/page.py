@@ -10,4 +10,3 @@ class Page:
 
     def next_page(self) -> Page:
         return Page(limit=self.limit, offset=self.offset + self.limit)
-

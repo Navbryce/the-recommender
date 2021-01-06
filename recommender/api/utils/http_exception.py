@@ -6,6 +6,7 @@ from recommender.data.serializable import serializable
 
 
 class ErrorCode(Enum):
+    INVALID_ELECTION_STATUS = "INVALID_ELECTION_STATUS"
     NO_BUSINESSES_FOUND = "NO_BUSINESSES_FOUND"
 
 
@@ -16,7 +17,9 @@ class HttpException(Exception):
     error_code: ErrorCode
     status_code: int
 
-    def __init__(self, message: str, status_code: int, error_code: Optional[ErrorCode]):
+    def __init__(
+        self, message: str, status_code: int, error_code: Optional[ErrorCode] = None
+    ):
         self.message = message
         self.status_code = status_code
         self.error_code = error_code

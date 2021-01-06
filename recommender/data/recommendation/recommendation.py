@@ -27,7 +27,7 @@ class Recommendation(DbBase):
         String(length=36), ForeignKey("search_session.id"), primary_key=True
     )
     business_id: str = Column(String(length=100), primary_key=True)
-    distance: float = Column(Float)
+    distance: float = Column(Float())
     status: Optional[RecommendationAction] = Column(
         Enum(RecommendationAction), default=None
     )

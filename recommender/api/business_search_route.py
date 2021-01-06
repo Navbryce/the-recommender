@@ -3,7 +3,8 @@ from typing import Optional
 
 from flask import Blueprint, request
 
-from recommender.api.json_content_type import json_content_type
+from recommender.api.global_services import business_manager
+from recommender.api.utils.json_content_type import json_content_type
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -12,7 +13,6 @@ from recommender.data.recommendation.displayable_recommendation import (
 )
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 from recommender.data.session_creation_response import SessionCreationResponse
-from recommender.external_api_clients.yelp_client import YelpClient
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.recommend.recommender import Recommender
 from recommender.session.displayable_search_session import DisplayableSearchSession
@@ -20,11 +20,9 @@ from recommender.session.session_manager import SessionManager
 
 business_search = Blueprint("business_search", __name__)
 
-api_key = os.environ["YELP_API_KEY"]
-yelp_client: YelpClient = YelpClient(api_key)
-recommender: Recommender = Recommender(yelp_client)
+recommender: Recommender = Recommender(business_manager)
 recommendation_manager: RecommendationManager = RecommendationManager(
-    yelp_client, recommender
+    business_manager, recommender
 )
 session_manager: SessionManager = SessionManager(recommendation_manager)
 

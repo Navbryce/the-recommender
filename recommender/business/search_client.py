@@ -5,7 +5,7 @@ from recommender.data.recommendation.business_search_request import (
 )
 from recommender.data.recommendation.displayable_business import DisplayableBusiness
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
-from recommender.external_api_clients.page import Page
+from recommender.business.page import Page
 
 
 class SearchClient(ABC):

@@ -4,9 +4,8 @@ from logging import warning
 from typing import Final
 
 from fuzzywuzzy import fuzz
-from werkzeug.exceptions import NotFound
 
-from recommender.api.http_exception import HttpException, ErrorCode
+from recommender.api.utils.http_exception import HttpException, ErrorCode
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -15,8 +14,8 @@ from recommender.data.recommendation.displayable_recommendation import (
 )
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.recommendation import Recommendation
-from recommender.external_api_clients.page import Page
-from recommender.external_api_clients.search_client import SearchClient
+from recommender.business.page import Page
+from recommender.business.search_client import SearchClient
 from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
 
 

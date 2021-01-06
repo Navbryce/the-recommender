@@ -2,7 +2,7 @@ from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
 )
 from recommender.data.recommendation.recommendation import Recommendation
-from recommender.external_api_clients.search_client import SearchClient
+from recommender.business.search_client import SearchClient
 from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
 from recommender.recommend.recommender import Recommender
 from recommender.session.search_session import SearchSession
