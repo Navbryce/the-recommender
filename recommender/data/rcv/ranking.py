@@ -7,12 +7,24 @@ from sqlalchemy import (
     UniqueConstraint,
     ForeignKey,
 )
+from sqlalchemy.orm import Session
 
 from recommender.db_config import DbBase
 
 
 class Ranking(DbBase):
+    @staticmethod
+    def delete_users_rankings_for_election(
+        db_session: Session, user_id: str, election_id: str
+    ):
+        return (
+            db_session.query(Ranking)
+            .filter_by(user_id=user_id, election_id=election_id)
+            .delete()
+        )
+
     __tablename__ = "ranking"
+
     user_id: str = Column(String(length=36), ForeignKey("user.id"))
     election_id: str = Column(String(length=36))
     business_id: str = Column(String(length=100))

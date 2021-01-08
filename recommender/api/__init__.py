@@ -1,3 +1,4 @@
+import rq_dashboard
 from dotenv import load_dotenv
 from flask import Flask
 
@@ -19,11 +20,22 @@ def start_api(test_config=None):
     CORS(app)
 
     # import blue prints
+    from recommender.api.auth_route import auth
     from recommender.api.business_search_route import business_search
     from recommender.api.rcv_route import rcv
 
+    app.register_blueprint(auth, url_prefix="/auth")
     app.register_blueprint(business_search, url_prefix="/business-search")
     app.register_blueprint(rcv, url_prefix="/rcv")
+
+    # queue metrics
+    from recommender.api.global_services import auth_route_utils
+
+    @rq_dashboard.blueprint.before_request
+    def verify_auth():
+        auth_route_utils.require_user_before_request()
+
+    app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
 
     if test_config is None:
         # load the instance config, if it exists, when not testing

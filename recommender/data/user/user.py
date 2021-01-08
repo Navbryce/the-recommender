@@ -1,7 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from sqlalchemy import String, Column
+from sqlalchemy import String, Column, Boolean
 
 from recommender.data.serializable import serializable
 from recommender.db_config import DbBase
@@ -12,6 +12,12 @@ from recommender.db_config import DbBase
 class SerializableBasicUser:
     id: str
     nickname: str
+    is_admin: bool
+
+    def __init__(self, id: str, nickname: str, is_admin: bool = False):
+        self.id = id
+        self.nickname = nickname
+        self.is_admin = is_admin
 
 
 @serializable
@@ -36,10 +42,11 @@ class BasicUser(DbBase):
 
 
 class FullUser(BasicUser):
-    email: str = Column(String(length=300), nullable=True)
-    first_name: str = Column(String(length=300), nullable=True)
-    last_name: str = Column(String(length=300), nullable=True)
-    password: str = Column(String(length=300), nullable=True)
+    email: str = Column(String(length=300), nullable=False)
+    first_name: str = Column(String(length=300), nullable=False)
+    last_name: str = Column(String(length=300), nullable=False)
+    password: str = Column(String(length=300), nullable=False)
+    is_admin: str = Column(Boolean, default=False, nullable=False)
 
     def to_serializable_user(self) -> SerializableBasicUser:
         return SerializableFullUser(
@@ -48,6 +55,7 @@ class FullUser(BasicUser):
             email=self.email,
             first_name=self.first_name,
             last_name=self.last_name,
+            is_admin=self.is_admin,
         )
 
     __mapper_args__ = {"polymorphic_identity": "FullUser"}

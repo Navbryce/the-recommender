@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 from uuid import uuid4
 
+import requests
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 
@@ -11,19 +12,24 @@ from recommender.data.db_utils import is_unique_key_error
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
 from recommender.data.rcv.election_status import ElectionStatus
+from recommender.data.rcv.ranking import Ranking
 from recommender.data.recommendation.location import Location
-from recommender.data.user.user import BasicUser
+from recommender.data.user.user import SerializableBasicUser
 from recommender.db_config import DbSession
-from recommender.data.rcv.candidate_round_result import CandidateRoundResult
+from recommender.rcv.rcv_queue_config import rcv_vote_queue
+from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 
 
 class RCVManager:
     __business_manager: BusinessManager
+    __election_result_update_consumer: ElectionResultUpdateConsumer = ElectionResultUpdateConsumer()
 
     def __init__(self, business_manager: BusinessManager):
         self.__business_manager = business_manager
 
-    def create_election(self, location: Location, user: BasicUser) -> Election:
+    def create_election(
+        self, location: Location, user: SerializableBasicUser
+    ) -> Election:
         db_session = DbSession()
         election_id = str(uuid4())
         while True:
@@ -51,13 +57,15 @@ class RCVManager:
             ]
         )
 
-    def add_candidate(self, active_id: str, business_id: str) -> bool:
+    def add_candidate(self, active_id: str, business_id: str, user_id: str) -> bool:
         db_session = DbSession()
 
         partial_election = Election.get_active_election_by_active_id(
             db_session=db_session,
             active_id=active_id,
-            query_modifier=lambda x: x.options(load_only("id", "election_status")),
+            query_modifier=lambda x: x.options(
+                load_only(Election.id, Election.election_status)
+            ),
         )
         if partial_election is None:
             raise HttpException(
@@ -73,7 +81,10 @@ class RCVManager:
         # Calculate distance
 
         candidate = Candidate(
-            election_id=partial_election.id, business_id=business_id, distance=0
+            election_id=partial_election.id,
+            business_id=business_id,
+            distance=0,
+            creator_id=user_id,
         )
         db_session.add(candidate)
         try:
@@ -89,7 +100,9 @@ class RCVManager:
         partial_election = Election.get_election_by_id(
             db_session,
             election_id,
-            query_modifier=lambda x: x.options(load_only("id", "election_status")),
+            query_modifier=lambda x: x.options(
+                load_only(Election.id, Election.election_status)
+            ),
         )
         if partial_election is None:
             raise HttpException(
@@ -98,7 +111,7 @@ class RCVManager:
             )
         if partial_election.election_status != ElectionStatus.IN_CREATION:
             raise InvalidElectionStateException(
-                message=f"Cannot move an election to voting with status: {partial_election.election_status.value}"
+                message=f"Cannot move an election to status {ElectionStatus.VOTING.name} when status is {partial_election.election_status.value}"
             )
 
         partial_election.election_status = ElectionStatus.VOTING
@@ -118,7 +131,9 @@ class RCVManager:
         partial_election = Election.get_election_by_id(
             db_session,
             election_id,
-            query_modifier=lambda x: x.options(load_only("id", "election_status")),
+            query_modifier=lambda x: x.options(
+                load_only(Election.id, Election.election_status)
+            ),
         )
         if partial_election.election_status != ElectionStatus.VOTING:
             raise InvalidElectionStateException(
@@ -128,11 +143,92 @@ class RCVManager:
         partial_election.election_completed_at = datetime.now()
         db_session.commit()
 
+    def get_candidates(self, active_id: str) -> [Candidate]:
+        db_session = DbSession()
+        partial_election = Election.get_active_election_by_active_id(
+            db_session,
+            active_id,
+            query_modifier=lambda x: x.options(load_only(Election.id)),
+        )
+
+        if partial_election is None:
+            raise HttpException(
+                message=f"Election with active id: {active_id} not found",
+                status_code=404,
+            )
+        return partial_election.candidates
+
+    def vote(self, user_id: str, election_id: str, votes: [str]):
+        db_session = DbSession()
+        partial_election = Election.get_election_by_id(
+            db_session,
+            election_id,
+            query_modifier=lambda x: x.options(
+                load_only(Election.id, Election.election_status)
+            ),
+        )
+
+        if partial_election is None:
+            raise HttpException(
+                message=f"Election with id: {election_id} not found", status_code=404
+            )
+
+        if partial_election.election_status != ElectionStatus.VOTING:
+            raise InvalidElectionStateException(
+                f"Cannot vote unless election is in voting status. Current status: {partial_election.election_status.name}"
+            )
+
+        candidate_ids = set(
+            [candidate.business_id for candidate in partial_election.candidates]
+        )
+        for business_id in votes:
+            if business_id not in candidate_ids:
+                raise HttpException(
+                    message=f"Unknown or duplicate candidate id {business_id}",
+                    status_code=404,
+                )
+            candidate_ids.remove(business_id)
+
+        if len(candidate_ids) > 0:
+            raise HttpException(
+                message=f"Missing votes for candidates: {', '.join(candidate_ids)}",
+                status_code=400,
+            )
+
+        rankings = [
+            Ranking(
+                user_id=user_id,
+                election_id=election_id,
+                business_id=business_id,
+                rank=index,
+            )
+            for index, business_id in enumerate(votes)
+        ]
+        Ranking.delete_users_rankings_for_election(
+            db_session, user_id=user_id, election_id=election_id
+        )
+        db_session.add_all(rankings)
+        db_session.commit()
+
+        self.__queue_election_for_result_update(election=partial_election)
+
+    def __queue_election_for_result_update(self, election: Election):
+        """
+        Add more logic later on:
+        If election has been updated recently, delay update by a bit or add some sort of rate limit on an
+        election basis
+        """
+        if rcv_vote_queue.fetch_job(election.election_creator_id) is None:
+            rcv_vote_queue.enqueue(
+                self.__election_result_update_consumer.consume, election.id
+            )
+            print("queued")
+
 
 class InvalidElectionStateException(HttpException):
     def __init__(self, message):
         super(InvalidElectionStateException, self).__init__(
             message=message,
-            status_code=401,
+            status_code=requests.codes.conflict,
             error_code=ErrorCode.INVALID_ELECTION_STATUS,
         )
