@@ -1,12 +1,27 @@
 from __future__ import annotations
+
+import array
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Dict, List
 
-from sqlalchemy import String, Column, DateTime, Float, Index, ForeignKey, Enum
-from sqlalchemy.orm import composite, relationship, Session, load_only, Query
+from sqlalchemy import (
+    String,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    ForeignKey,
+    Enum,
+    func,
+    select,
+)
+from sqlalchemy.orm import composite, relationship, Session, load_only, Query, aliased
 
+from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election_status import ElectionStatus
+from recommender.data.rcv.ranking import Ranking
+from recommender.data.rcv.round import Round
 from recommender.data.recommendation.location import Location
 from recommender.db_config import DbBase
 
@@ -34,6 +49,38 @@ class Election(DbBase):
             .first()
         )
 
+    @staticmethod
+    def get_rankings_by_user_for_election(
+        db_session: Session, election_id: str
+    ) -> Dict[str, List[str]]:
+        aliased_ranking_table = aliased(Ranking, name="aliased_ranking")
+
+        user_rankings = (
+            db_session.query(func.group_concat(aliased_ranking_table.business_id))
+            .filter(
+                aliased_ranking_table.user_id == Ranking.user_id,
+                aliased_ranking_table.election_id == election_id,
+            )
+            .order_by(aliased_ranking_table.rank.asc())
+            .correlate(Ranking)
+            .as_scalar()
+        )
+        rankings_for_election = (
+            db_session.query(Ranking.user_id, user_rankings)
+            .filter(Ranking.election_id == election_id)
+            .group_by(Ranking.user_id)
+            .all()
+        )
+
+        return {
+            user_id: rank_string.split(",")
+            for user_id, rank_string in rankings_for_election
+        }
+
+    @staticmethod
+    def delete_election_results_for_election(db_session: Session, election_id: str):
+        db_session.query(Round).filter_by(election_id=election_id).delete()
+
     __tablename__ = "election"
 
     id: str = Column(String(length=36), primary_key=True)
@@ -43,7 +90,7 @@ class Election(DbBase):
     )
     election_completed_at: datetime = Column(DateTime)
     election_creator_id: str = Column(
-        String(length=36), ForeignKey("user.id"), primary_key=True, nullable=False
+        String(length=36), ForeignKey(BasicUser.id), nullable=False
     )
 
     lat: float = Column(Float)

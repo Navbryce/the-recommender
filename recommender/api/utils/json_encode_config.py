@@ -4,7 +4,7 @@ from typing import Dict
 import jsonpickle
 from jsonpickle.handlers import BaseHandler
 
-
+# TODO: MOVE TO UTILITIES
 class EnumHandler(BaseHandler):
     def restore(self, obj):
         raise NotImplementedError

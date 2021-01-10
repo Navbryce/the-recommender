@@ -13,9 +13,10 @@ from sqlalchemy.orm import relationship
 
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.round_action import RoundAction
+from recommender.db_config import DbBase
 
 
-class CandidateRoundResult:
+class CandidateRoundResult(DbBase):
     __tablename__ = "candidate_round_result"
 
     election_id: str = Column(
@@ -25,13 +26,15 @@ class CandidateRoundResult:
     business_id: str = Column(String(length=100), nullable=False)
     number_of_rank_one_votes: int = Column(Integer(), nullable=False)
 
-    candidate: Candidate = relationship("candidate", uselist=False)
+    candidate: Candidate = relationship("Candidate", uselist=False)
     round_action: Optional[RoundAction] = Column(Enum(RoundAction))
 
     __table_args__ = (
         PrimaryKeyConstraint(election_id, round_number, business_id),
         ForeignKeyConstraint(
-            [election_id, round_number], ["round.election_id", "round.round_number"]
+            [election_id, round_number],
+            ["round.election_id", "round.round_number"],
+            ondelete="CASCADE",
         ),
         ForeignKeyConstraint(
             [election_id, business_id],

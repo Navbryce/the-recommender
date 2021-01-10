@@ -9,17 +9,13 @@ from recommender.api.utils.json_content_type import (
     generate_json_response,
     generate_data_json_response,
 )
-from recommender.data.user.user import (
-    FullUser,
-    SerializableBasicUser,
-    SerializableFullUser,
-)
-from recommender.data.user.user_manager import UserManager
+from recommender.data.auth.user import SerializableBasicUser, SerializableFullUser
+from recommender.auth.user_manager import UserManager
+from recommender.env_config import PROD
 
 AUTH_SECRET = os.environ["AUTH_SECRET"]
 JWT_ENCRYPTION = "HS256"
-USER_COOKIE_KEY = "user"
-PROD = os.environ["IS_PROD"].lower() == "true"
+USER_COOKIE_KEY = "auth"
 
 
 class AuthRouteUtils:
@@ -53,8 +49,8 @@ class AuthRouteUtils:
         return decorator
 
     """
-    Adds the serializable user to g.user.
-    An alternative to require_user_route (which passes the user direclty as a param)
+    Adds the serializable auth to g.auth.
+    An alternative to require_user_route (which passes the auth direclty as a param)
     """
 
     def require_user_before_request(self):

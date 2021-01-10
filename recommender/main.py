@@ -20,4 +20,6 @@ if __name__ == "__main__":
     )
     logging.config.dictConfig(logging_config)
 
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+
     start_api().run(host=os.environ["HOST"], port=os.environ["PORT"])

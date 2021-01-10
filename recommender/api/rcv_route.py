@@ -9,7 +9,7 @@ from recommender.api.global_services import business_manager, auth_route_utils
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.recommendation.location import Location
-from recommender.data.user.user import SerializableBasicUser
+from recommender.data.auth.user import SerializableBasicUser
 from recommender.rcv.rcv_manager import RCVManager
 
 rcv_manager = RCVManager(business_manager)
@@ -37,6 +37,14 @@ def get_active_election_info() -> [Candidate]:
     return rcv_manager.get_candidates(active_id)
 
 
+@rcv.route("/<election_id>/updates", methods=["GET"])
+def subscribe_to_election_updates(election_id: str) -> Response:
+    return Response(
+        response=rcv_manager.get_election_update_stream(election_id).subscribe_to_raw(),
+        mimetype="text/event-stream",
+    )
+
+
 @rcv.route("/add-candidate", methods=["PUT"])
 @auth_route_utils.require_user_route()
 def add_candidate(user: SerializableBasicUser) -> Dict[str, bool]:
@@ -52,23 +60,27 @@ def add_candidate(user: SerializableBasicUser) -> Dict[str, bool]:
 @rcv.route("/<election_id>/state", methods=["POST"])
 @auth_route_utils.require_user_route()
 def update_election_state(user: SerializableBasicUser, election_id: str) -> Response:
-    # Verify user updating state is the one who created the election
+    # Verify auth updating state is the one who created the election
     new_state = request.json["state"]
+    if (
+        new_state != ElectionStatus.VOTING.value
+        and new_state != ElectionStatus.MANUALLY_COMPLETE.value
+    ):
+        raise ValueError(f"Invalid input state: {new_state}")
+
     if new_state == ElectionStatus.VOTING.value:
         rcv_manager.move_election_to_voting(election_id)
     elif new_state == ElectionStatus.MANUALLY_COMPLETE.value:
         rcv_manager.mark_election_as_complete(
-            election_id, ElectionStatus.MANUALLY_COMPLETEcommit
+            election_id, ElectionStatus.MANUALLY_COMPLETE
         )
-        return Response(status=200)
-    else:
-        raise ValueError(f"Invalid input state: {new_state}")
+    return Response(status=200)
 
 
 @rcv.route("/<election_id>/vote", methods=["PUT"])
 @auth_route_utils.require_user_route()
 def vote(election_id: str, user: SerializableBasicUser) -> Response:
-    # Verify user updating state is the one who created the election
+    # Verify auth updating state is the one who created the election
     votes: [str] = request.json["votes"]
     rcv_manager.vote(user_id=user.id, election_id=election_id, votes=votes)
     return Response(status=201)

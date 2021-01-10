@@ -1,8 +1,10 @@
 import random
+from collections import Generator
 from datetime import datetime
 from uuid import uuid4
 
 import requests
+from rq.job import JobStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 
@@ -14,8 +16,13 @@ from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
 from recommender.data.recommendation.location import Location
-from recommender.data.user.user import SerializableBasicUser
+from recommender.data.auth.user import SerializableBasicUser
 from recommender.db_config import DbSession
+from recommender.rcv.election_update_stream import (
+    ElectionUpdateStream,
+    ElectionUpdateEvent,
+    ElectionUpdateEventType,
+)
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
 from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 
@@ -93,6 +100,11 @@ class RCVManager:
             if is_unique_key_error(error):
                 return False
             raise error
+        ElectionUpdateStream.for_election(partial_election.id).publish_message(
+            ElectionUpdateEvent(
+                type=ElectionUpdateEventType.CANDIDATE_ADDED, payload=business_id
+            )
+        )
         return True
 
     def move_election_to_voting(self, election_id: str):
@@ -218,11 +230,31 @@ class RCVManager:
         If election has been updated recently, delay update by a bit or add some sort of rate limit on an
         election basis
         """
-        if rcv_vote_queue.fetch_job(election.election_creator_id) is None:
+        fetch_result = rcv_vote_queue.fetch_job(election.id)
+        if (
+            fetch_result is None
+            or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
+            or fetch_result.get_status(refresh=False) == JobStatus.FAILED
+        ):
             rcv_vote_queue.enqueue(
-                self.__election_result_update_consumer.consume, election.id
+                self.__election_result_update_consumer.consume,
+                election.id,
+                job_id=election.id,
             )
-            print("queued")
+
+    def get_election_update_stream(self, election_id: str) -> ElectionUpdateStream:
+        db_session = DbSession()
+        if (
+            Election.get_election_by_id(
+                db_session, election_id, lambda x: x.options(load_only(Election.id))
+            )
+            is None
+        ):
+            raise HttpException(
+                message=f"Election with id: {election_id} not found", status_code=404
+            )
+
+        return ElectionUpdateStream.for_election(election_id)
 
 
 class InvalidElectionStateException(HttpException):

@@ -42,11 +42,11 @@ class BasicUser(DbBase):
 
 
 class FullUser(BasicUser):
-    email: str = Column(String(length=300), nullable=False)
-    first_name: str = Column(String(length=300), nullable=False)
-    last_name: str = Column(String(length=300), nullable=False)
-    password: str = Column(String(length=300), nullable=False)
-    is_admin: str = Column(Boolean, default=False, nullable=False)
+    email: str = Column(String(length=300))
+    first_name: str = Column(String(length=300))
+    last_name: str = Column(String(length=300))
+    password: str = Column(String(length=300))
+    is_admin: str = Column(Boolean, default=False)
 
     def to_serializable_user(self) -> SerializableBasicUser:
         return SerializableFullUser(

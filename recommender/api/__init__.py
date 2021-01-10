@@ -1,5 +1,5 @@
 import rq_dashboard
-from dotenv import load_dotenv
+from recommender.env_config import PROD
 from flask import Flask
 
 # We need to use an external dependency for env management because pycharm does not currently support .env files
@@ -7,7 +7,6 @@ from flask_cors import CORS
 
 from recommender.api.utils.json_content_type import json_content_type
 
-load_dotenv(verbose=True)
 
 import recommender.api.utils.json_encode_config
 
@@ -33,7 +32,8 @@ def start_api(test_config=None):
 
     @rq_dashboard.blueprint.before_request
     def verify_auth():
-        auth_route_utils.require_user_before_request()
+        if PROD:
+            auth_route_utils.require_user_before_request()
 
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
 
@@ -65,7 +65,7 @@ def start_api(test_config=None):
     @app.route("/wake", methods=["GET"])
     @json_content_type()
     def wake():
-        # this route exists to spin up the backend server when the user loads the site
+        # this route exists to spin up the backend server when the auth loads the site
         return None
 
     return app

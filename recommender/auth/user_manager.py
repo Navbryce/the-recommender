@@ -2,7 +2,7 @@ import os
 from typing import Optional
 from uuid import uuid4
 
-from recommender.data.user.user import (
+from recommender.data.auth.user import (
     BasicUser,
     SerializableFullUser,
     SerializableBasicUser,
