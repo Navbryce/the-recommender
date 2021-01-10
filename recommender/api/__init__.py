@@ -1,6 +1,8 @@
 import os
 
 import rq_dashboard
+from flask_talisman import Talisman
+
 from recommender.env_config import PROD
 from flask import Flask, Response
 
@@ -19,8 +21,9 @@ from recommender.db_config import DbBase, engine
 
 def start_api(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__)
     CORS(app)
+    Talisman(app, force_https=PROD)
 
     # import blue prints
     from recommender.api.auth_route import auth
