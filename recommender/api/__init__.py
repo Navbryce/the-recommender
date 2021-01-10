@@ -23,7 +23,16 @@ def start_api(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     CORS(app)
-    Talisman(app, force_https=PROD)
+    Talisman(
+        app,
+        force_https=PROD,
+        content_security_policy={
+            "default-src": "'self'",
+            "img-src": "*",
+            "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src": "'self' 'unsafe-inline'",
+        },
+    )
 
     # import blue prints
     from recommender.api.auth_route import auth
