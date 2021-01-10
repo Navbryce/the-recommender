@@ -28,9 +28,13 @@ def check_redis_connection(connection: Redis):
     connection.ping()
 
 
-primary_redis_conn = Redis(
-    os.environ["REDIS_HOST"],
-    os.environ["REDIS_PORT"],
-    password=None if "REDIS_PASS" not in os.environ else os.environ["REDIS_PASS"],
+primary_redis_conn = (
+    Redis.from_url(os.environ["REDIS_URL"])
+    if "REDIS_URL" in os.environ
+    else Redis(
+        os.environ["REDIS_HOST"],
+        os.environ["REDIS_PORT"],
+        password=None if "REDIS_PASS" not in os.environ else os.environ["REDIS_PASS"],
+    )
 )
 check_redis_connection(primary_redis_conn)
