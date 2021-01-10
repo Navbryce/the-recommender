@@ -127,7 +127,9 @@ class AuthRouteUtils:
     def login_as_user(self, response: Response, user: SerializableBasicUser):
         payload = {**user.__dict__, "type": user.__class__.__name__}
         jwt_payload = jwt.encode(payload, AUTH_SECRET, algorithm=JWT_ENCRYPTION)
-        response.set_cookie(key=USER_COOKIE_KEY, value=jwt_payload, secure=PROD)
+        response.set_cookie(
+            key=USER_COOKIE_KEY, value=jwt_payload, secure=PROD, httponly=True
+        )
 
 
 class AuthorizationException(HttpException):

@@ -1,12 +1,16 @@
+import os
+
 import rq_dashboard
 from recommender.env_config import PROD
-from flask import Flask
+from flask import Flask, Response
 
 # We need to use an external dependency for env management because pycharm does not currently support .env files
 from flask_cors import CORS
 
-from recommender.api.utils.json_content_type import json_content_type
-
+from recommender.api.utils.json_content_type import (
+    json_content_type,
+    generate_json_response,
+)
 
 import recommender.api.utils.json_encode_config
 
@@ -35,6 +39,7 @@ def start_api(test_config=None):
         if PROD:
             auth_route_utils.require_user_before_request()
 
+    app.config["RQ_DASHBOARD_REDIS_URL"] = os.environ["REDIS_URL"]
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
 
     if test_config is None:
@@ -48,18 +53,18 @@ def start_api(test_config=None):
     DbBase.metadata.create_all(engine)
 
     @app.errorhandler(recommender.api.utils.http_exception.HttpException)
-    @json_content_type(include_status_code=True)
     def handle_http_exception(
         error: recommender.api.utils.http_exception.HttpException
-    ):
-        return (
-            {
+    ) -> Response:
+        return generate_json_response(
+            data=None,
+            additional_root_params={
                 "message": error.message,
                 "errorCode": None
                 if error.error_code is None
                 else error.error_code.value,
             },
-            error.status_code,
+            status=error.status_code,
         )
 
     @app.route("/wake", methods=["GET"])

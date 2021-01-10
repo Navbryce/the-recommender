@@ -17,9 +17,9 @@ def register() -> Response:
 def login() -> Response:
     error = None
     if request.method == "POST":
-        username = request.form["username"]
+        email = request.form["email"]
         password = request.form["password"]
-        user = user_manager.get_user(username, password)
+        user = user_manager.get_user(email, password)
         if user is None:
             error = "Incorrect username or password"
         else:
