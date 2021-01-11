@@ -16,7 +16,7 @@ class BusinessSearchRequest(DbBase):
     @staticmethod
     def from_dict(json_dict: Dict):
         search_term = json_dict.get("searchTerm", "")
-        location = Location.from_json(json_dict["location"])
+        location = Location.from_json_dict(json_dict["location"])
         price_categories = [
             PriceCategory.from_name(category_name)
             for category_name in json_dict.get("priceCategories", [])

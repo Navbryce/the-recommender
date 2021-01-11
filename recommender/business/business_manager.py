@@ -1,3 +1,5 @@
+import jsonpickle
+
 from recommender.business.page import Page
 from recommender.business.search_client import SearchClient
 from recommender.data.recommendation.business_search_request import (
@@ -26,4 +28,5 @@ class BusinessManager(SearchClient):
         return self.__search_client.business_search(search_params, page)
 
     def get_displayable_business(self, business_id: str) -> DisplayableBusiness:
-        return self.__search_client.get_displayable_business(business_id)
+        business = self.__search_client.get_displayable_business(business_id)
+        return business

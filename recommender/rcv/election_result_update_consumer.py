@@ -7,6 +7,11 @@ from recommender.data.rcv.election import Election
 from recommender.data.rcv.round import Round
 from recommender.data.rcv.round_action import RoundAction
 from recommender.db_config import DbSession
+from recommender.rcv.election_update_stream import (
+    ElectionUpdateStream,
+    ElectionUpdateEvent,
+    ElectionUpdateEventType,
+)
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
 
 """
@@ -33,6 +38,11 @@ class ElectionResultUpdateConsumer:
             rankings=list(rankings_by_voter.values()),
         )
         db_session.commit()
+        ElectionUpdateStream.for_election(election_id).publish_message(
+            ElectionUpdateEvent(
+                type=ElectionUpdateEventType.RESULTS_UPDATED, payload=None
+            )
+        )
 
     def __run_election_round(
         self,

@@ -126,8 +126,12 @@ class RCVManager:
                 message=f"Cannot move an election to status {ElectionStatus.VOTING.name} when status is {partial_election.election_status.value}"
             )
 
+        # TODO: validate change made by using WHERE
         partial_election.election_status = ElectionStatus.VOTING
         db_session.commit()
+        self.__push_election_status_change_to_update_stream(
+            election_id, ElectionStatus.VOTING
+        )
 
     def mark_election_as_complete(
         self, election_id: str, complete_reason: ElectionStatus
@@ -154,6 +158,18 @@ class RCVManager:
         partial_election.election_status = complete_reason
         partial_election.election_completed_at = datetime.now()
         db_session.commit()
+        self.__push_election_status_change_to_update_stream(
+            election_id, complete_reason
+        )
+
+    def __push_election_status_change_to_update_stream(
+        self, election_id: str, new_status: ElectionStatus
+    ):
+        ElectionUpdateStream.for_election(election_id).publish_message(
+            ElectionUpdateEvent(
+                ElectionUpdateEventType.STATUS_CHANGED, new_status.value
+            )
+        )
 
     def get_candidates(self, active_id: str) -> [Candidate]:
         db_session = DbSession()

@@ -14,7 +14,7 @@ from recommender.api.utils.json_content_type import (
     generate_json_response,
 )
 
-import recommender.api.utils.json_encode_config
+import recommender.utilities.json_encode_utilities
 
 from recommender.db_config import DbBase, engine
 

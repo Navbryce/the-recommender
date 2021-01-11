@@ -20,7 +20,7 @@ rcv = Blueprint("rcv", __name__)
 @rcv.route("", methods=["PUT"])
 @auth_route_utils.use_or_create_user_route
 def new_rcv(user: SerializableBasicUser) -> Dict[str, Dict[str, str]]:
-    location = Location.from_json(request.json["location"])
+    location = Location.from_json_dict(request.json["location"])
     election = rcv_manager.create_election(location=location, user=user)
 
     data = {"election": {"id": election.id, "activeCode": election.active_id}}

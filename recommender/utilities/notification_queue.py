@@ -37,7 +37,7 @@ class MessageStream(Generic[T]):
         subscription = self.__redis_connection.pubsub()
         subscription.subscribe(self.queue_name)
         for message in subscription.listen():
-            if message["type"] != "data":
+            if message["type"] != "message":
                 continue
             yield message["data"]
 

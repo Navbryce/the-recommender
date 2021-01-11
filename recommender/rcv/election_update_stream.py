@@ -6,13 +6,13 @@ from enum import Enum
 from typing import Final
 from typing import Optional, Union
 
-from recommender.api.utils.json_encode_config import json_encode
+from recommender.utilities.json_encode_utilities import json_encode
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.utilities.notification_queue import MessageStream
 
 
 class ElectionUpdateEventType(Enum):
-    STATE_CHANGED = "STATE_CHANGED"
+    STATUS_CHANGED = "STATUS_CHANGED"
     CANDIDATE_ADDED = "CANDIDATE_ADDED"
     RESULTS_UPDATED = "RESULTS_UPDATED"
 

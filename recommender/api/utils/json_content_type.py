@@ -2,7 +2,7 @@ from typing import Callable, Dict, Optional
 
 from flask import Response
 
-from recommender.api.utils.json_encode_config import json_encode
+from recommender.utilities.json_encode_utilities import json_encode
 
 
 def json_content_type(
