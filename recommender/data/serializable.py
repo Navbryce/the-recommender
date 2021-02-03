@@ -14,11 +14,10 @@ DEPRECATED
 """
 
 
-def serializable(cls: Type[T], get_serializable_attributes: Callable[[T], Dict] = None):
-    if get_serializable_attributes is None:
-        get_serializable_attributes = getattr(
-            cls, "__get_public_attributes__", lambda x: x.__dict__
-        )
+def serializable_persistence_object(cls: Type[T], get_serializable_attributes: Callable[[T], Dict] = None):
+    def __getstate__(self) -> Dict:
+        return {key: value for key, value in self.__dict__.items() if key[0] != "_"}
 
-    cls.__getstate__ = get_serializable_attributes
+    cls.__getstate__ = __getstate__
+
     return cls

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import array
 from datetime import datetime
 from typing import Callable, Dict, List
 
@@ -8,26 +7,25 @@ from sqlalchemy import (
     String,
     Column,
     DateTime,
-    Float,
     Index,
     ForeignKey,
     Enum,
     func,
-    select,
 )
-from sqlalchemy.orm import composite, relationship, Session, load_only, Query, aliased
+from sqlalchemy.orm import relationship, Session, Query, aliased
 
 from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
 from recommender.data.rcv.round import Round
-from recommender.data.recommendation.location import Location
+from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
 ACTIVE_ID_LENGTH = 6
 
 
+@serializable_persistence_object
 class Election(DbBase):
     @staticmethod
     def get_election_by_id(
@@ -92,10 +90,6 @@ class Election(DbBase):
     election_creator_id: str = Column(
         String(length=36), ForeignKey(BasicUser.id), nullable=False
     )
-
-    lat: float = Column(Float)
-    long: float = Column(Float)
-    location: Location = composite(Location, lat, long)
 
     candidates: [Candidate] = relationship("Candidate")
 

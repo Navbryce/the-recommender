@@ -1,30 +1,27 @@
 import random
-from collections import Generator
 from datetime import datetime
 from uuid import uuid4
 
-import requests
 from rq.job import JobStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 
 from recommender.api.utils.http_exception import HttpException, ErrorCode
 from recommender.business.business_manager import BusinessManager
+from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.db_utils import is_unique_key_error
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
-from recommender.data.recommendation.location import Location
-from recommender.data.auth.user import SerializableBasicUser
 from recommender.db_config import DbSession
+from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 from recommender.rcv.election_update_stream import (
     ElectionUpdateStream,
     ElectionUpdateEvent,
     ElectionUpdateEventType,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
-from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 
 
 class RCVManager:
@@ -35,7 +32,7 @@ class RCVManager:
         self.__business_manager = business_manager
 
     def create_election(
-        self, location: Location, user: SerializableBasicUser
+        self, user: SerializableBasicUser
     ) -> Election:
         db_session = DbSession()
         election_id = str(uuid4())
@@ -44,7 +41,6 @@ class RCVManager:
                 election = Election(
                     id=election_id,
                     active_id=self.__generate_election_active_id(),
-                    location=location,
                     election_creator_id=user.id,
                 )
                 db_session.add(election)
@@ -63,6 +59,16 @@ class RCVManager:
                 for index in range(ACTIVE_ID_LENGTH)
             ]
         )
+
+    def get_election_by_id(self, id: str) -> Election:
+        db_session = DbSession()
+        return Election.get_election_by_id(db_session=db_session,
+                                           id=id)
+
+    def get_election_by_active_id(self, active_id: str) -> Election:
+        db_session = DbSession()
+        return Election.get_active_election_by_active_id(db_session, active_id)
+
 
     def add_candidate(self, active_id: str, business_id: str, user_id: str) -> bool:
         db_session = DbSession()
@@ -277,6 +283,5 @@ class InvalidElectionStateException(HttpException):
     def __init__(self, message):
         super(InvalidElectionStateException, self).__init__(
             message=message,
-            status_code=requests.codes.conflict,
             error_code=ErrorCode.INVALID_ELECTION_STATUS,
         )

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
-from recommender.data.recommendation.displayable_business import DisplayableBusiness
+from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.business.page import Page
 

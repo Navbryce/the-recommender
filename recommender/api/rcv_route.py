@@ -2,14 +2,12 @@ from typing import Dict
 
 from flask import Blueprint, Response, request
 
-from flask import Blueprint, Response, request
-
 from recommender.api import json_content_type
 from recommender.api.global_services import business_manager, auth_route_utils
-from recommender.data.rcv.candidate import Candidate
-from recommender.data.rcv.election_status import ElectionStatus
-from recommender.data.recommendation.location import Location
 from recommender.data.auth.user import SerializableBasicUser
+from recommender.data.rcv.candidate import Candidate
+from recommender.data.rcv.election import Election
+from recommender.data.rcv.election_status import ElectionStatus
 from recommender.rcv.rcv_manager import RCVManager
 
 rcv_manager = RCVManager(business_manager)
@@ -20,10 +18,12 @@ rcv = Blueprint("rcv", __name__)
 @rcv.route("", methods=["PUT"])
 @auth_route_utils.use_or_create_user_route
 def new_rcv(user: SerializableBasicUser) -> Dict[str, Dict[str, str]]:
-    location = Location.from_json_dict(request.json["location"])
-    election = rcv_manager.create_election(location=location, user=user)
+    election = rcv_manager.create_election(user=user)
 
-    data = {"election": {"id": election.id, "activeCode": election.active_id}}
+    data = {"election": {
+        "id": election.id,
+        "activeCode": election.active_id
+    }}
 
     return data
 
@@ -35,6 +35,12 @@ def get_active_election_info() -> [Candidate]:
     # update to return displayable businesses
     active_id = request.json["electionCode"]
     return rcv_manager.get_candidates(active_id)
+
+@rcv.route("/<election_id>", methods=["GET"])
+@json_content_type()
+def get_election(election_id: str) -> Election:
+    output = rcv_manager.get_election_by_id(election_id)
+    return output
 
 
 @rcv.route("/<election_id>/updates", methods=["GET"])
@@ -63,8 +69,8 @@ def update_election_state(user: SerializableBasicUser, election_id: str) -> Resp
     # Verify auth updating state is the one who created the election
     new_state = request.json["state"]
     if (
-        new_state != ElectionStatus.VOTING.value
-        and new_state != ElectionStatus.MANUALLY_COMPLETE.value
+            new_state != ElectionStatus.VOTING.value
+            and new_state != ElectionStatus.MANUALLY_COMPLETE.value
     ):
         raise ValueError(f"Invalid input state: {new_state}")
 

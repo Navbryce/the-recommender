@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from recommender.data.recommendation.address import Address
+from recommender.data.business.address import Address
 from recommender.data.recommendation.displayable_category import DisplayableCategory
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
-from recommender.data.serializable import serializable
+from recommender.data.serializable import serializable_persistence_object
 
 
-@serializable
+@serializable_persistence_object
 @dataclass
 class DisplayableBusiness:
     id: str

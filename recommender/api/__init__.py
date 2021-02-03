@@ -1,22 +1,18 @@
 import os
 
 import rq_dashboard
-from flask_talisman import Talisman
-
-from recommender.env_config import PROD
 from flask import Flask, Response
-
 # We need to use an external dependency for env management because pycharm does not currently support .env files
 from flask_cors import CORS
+from flask_talisman import Talisman
 
+import recommender.utilities.json_encode_utilities
 from recommender.api.utils.json_content_type import (
     json_content_type,
     generate_json_response,
 )
-
-import recommender.utilities.json_encode_utilities
-
 from recommender.db_config import DbBase, engine
+from recommender.env_config import PROD
 
 
 def start_api(test_config=None):
@@ -36,10 +32,12 @@ def start_api(test_config=None):
 
     # import blue prints
     from recommender.api.auth_route import auth
+    from recommender.api.business_route import business
     from recommender.api.business_search_route import business_search
     from recommender.api.rcv_route import rcv
 
     app.register_blueprint(auth, url_prefix="/auth")
+    app.register_blueprint(business, url_prefix="/business")
     app.register_blueprint(business_search, url_prefix="/business-search")
     app.register_blueprint(rcv, url_prefix="/rcv")
 
@@ -74,7 +72,7 @@ def start_api(test_config=None):
                 "message": error.message,
                 "errorCode": None
                 if error.error_code is None
-                else error.error_code.value,
+                else error.error_code
             },
             status=error.status_code,
         )

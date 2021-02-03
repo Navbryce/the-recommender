@@ -83,7 +83,6 @@ class Recommender:
             raise HttpException(
                 message="No businesses found. Try different parameters",
                 status_code=404,
-                error_code=ErrorCode.NO_BUSINESSES_FOUND,
             )
         elif len(potential_recommendations) < target_amount:
             warning(

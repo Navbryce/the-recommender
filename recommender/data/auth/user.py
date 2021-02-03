@@ -3,11 +3,11 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import String, Column, Boolean
 
-from recommender.data.serializable import serializable
+from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
 
-@serializable
+@serializable_persistence_object
 @dataclass
 class SerializableBasicUser:
     id: str
@@ -20,7 +20,7 @@ class SerializableBasicUser:
         self.is_admin = is_admin
 
 
-@serializable
+@serializable_persistence_object
 @dataclass
 class SerializableFullUser(SerializableBasicUser):
     email: str

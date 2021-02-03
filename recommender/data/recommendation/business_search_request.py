@@ -3,13 +3,13 @@ from typing import Dict
 from sqlalchemy import Column, String, Float, PickleType, ForeignKey
 from sqlalchemy.orm import composite
 
-from recommender.data.serializable import serializable
+from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 from recommender.data.recommendation.location import Location
 from recommender.data.recommendation.price import PriceCategory
 
 
-@serializable
+@serializable_persistence_object
 class BusinessSearchRequest(DbBase):
     __tablename__ = "search_request"
 

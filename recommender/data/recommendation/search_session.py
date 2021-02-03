@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import String, Column
+from sqlalchemy import String, Column, Enum, ForeignKey
 from sqlalchemy.orm import relationship, Session
 
+from recommender.data.rcv.election import Election
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
 from recommender.data.recommendation.recommendation import Recommendation
 from recommender.data.recommendation.recommendation_action import RecommendationAction
-from recommender.data.serializable import serializable
+from recommender.data.recommendation.search_session_status import SearchSessionStatus
+from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
 
@@ -24,7 +26,7 @@ def generate_recommendation_join_on_status(
     return f"and_(Recommendation.session_id == SearchSession.id, {status_condition})"
 
 
-@serializable
+@serializable_persistence_object
 class SearchSession(DbBase):
     @staticmethod
     def get_session_by_id(db_session: Session, session_id: str) -> SearchSession:
@@ -33,13 +35,23 @@ class SearchSession(DbBase):
     __tablename__ = "search_session"
 
     id: str = Column(String(length=36), primary_key=True)
+    session_status: SearchSessionStatus = Column(Enum(SearchSessionStatus), nullable=False, default=SearchSessionStatus.IN_PROGRESS)
     search_request: BusinessSearchRequest = relationship(
         "BusinessSearchRequest", uselist=False
     )
-    accepted_recommendation: Optional[Recommendation] = relationship(
+    dinner_party_id: Optional[str] = Column(
+        String(length=36), ForeignKey("election.id"), default=None
+    )
+    dinner_party: Optional[Election] = relationship("Election", uselist=False)
+
+    @property
+    def is_dinner_party(self) -> bool:
+        return self.dinner_party_id is not None
+
+    accepted_recommendations: [Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.ACCEPT),
-        uselist=False,
+        uselist=True,
     )
     current_recommendation: Optional[Recommendation] = relationship(
         "Recommendation",
@@ -60,8 +72,10 @@ class SearchSession(DbBase):
         return self.current_recommendation.business_id
 
     @property
-    def accepted_recommendation_id(self) -> str:
-        return self.accepted_recommendation.business_id
+    def accepted_recommendation_ids(self) -> [str]:
+        return [
+            recommendation.business_id for recommendation in self.accepted_recommendation_ids
+        ]
 
     @property
     def maybe_recommendation_ids(self) -> [str]:

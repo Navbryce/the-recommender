@@ -29,7 +29,7 @@ def __to_serializable(data: any) -> Union[List[any], Dict[str, any]]:
 
 
 def __to_camel_case(value: str) -> str:
-    pascal = "".join([value.title() for value in value.split("_")])
+    pascal = "".join([value[0].upper() + value[1:] for value in value.split("_")])
     return pascal[0].lower() + pascal[1:]
 
 

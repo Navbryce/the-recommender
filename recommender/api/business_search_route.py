@@ -1,9 +1,10 @@
-import os
 from typing import Optional
 
 from flask import Blueprint, request
 
 from recommender.api.global_services import business_manager
+from recommender.api.rcv_route import rcv_manager
+from recommender.api.utils.http_exception import HttpException, ErrorCode
 from recommender.api.utils.json_content_type import json_content_type
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
@@ -11,11 +12,12 @@ from recommender.data.recommendation.business_search_request import (
 from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
 )
+from recommender.data.recommendation.displayable_search_session import DisplayableSearchSession
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 from recommender.data.session_creation_response import SessionCreationResponse
+from recommender.db_config import DbSession
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.recommend.recommender import Recommender
-from recommender.session.displayable_search_session import DisplayableSearchSession
 from recommender.session.session_manager import SessionManager
 
 business_search = Blueprint("business_search", __name__)
@@ -24,14 +26,16 @@ recommender: Recommender = Recommender(business_manager)
 recommendation_manager: RecommendationManager = RecommendationManager(
     business_manager, recommender
 )
-session_manager: SessionManager = SessionManager(recommendation_manager)
+session_manager: SessionManager = SessionManager(recommendation_manager, rcv_manager)
 
 
 @business_search.route("", methods=["POST"])
 @json_content_type()
 def new_search_session() -> SessionCreationResponse:
-    search_request = BusinessSearchRequest.from_dict(request.json)
-    session = session_manager.new_session(search_request)
+    search_request = BusinessSearchRequest.from_dict(request.json['businessSearchParameters'])
+
+    dinner_party_active_id: Optional[str] = request.json['dinnerPartyActiveId']
+    session = session_manager.new_session(search_request, dinner_party_active_id=dinner_party_active_id)
     business_recommendation: DisplayableRecommendation = session_manager.get_first_recommendation(
         session_id=session.id
     )

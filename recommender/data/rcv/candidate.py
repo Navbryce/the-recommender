@@ -4,11 +4,11 @@ from sqlalchemy import ForeignKey, String, Column, Float, PrimaryKeyConstraint
 from sqlalchemy.orm import relationship
 
 from recommender.data.rcv.ranking import Ranking
-from recommender.data.serializable import serializable
+from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
 
-@serializable
+@serializable_persistence_object
 class Candidate(DbBase):
     __tablename__ = "candidate"
 

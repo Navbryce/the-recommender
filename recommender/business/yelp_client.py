@@ -5,11 +5,11 @@ import requests
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-from recommender.data.recommendation.address import Address
+from recommender.data.business.address import Address
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
-from recommender.data.recommendation.displayable_business import DisplayableBusiness
+from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.recommendation.displayable_category import DisplayableCategory
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.location import Location

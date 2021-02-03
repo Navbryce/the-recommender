@@ -5,7 +5,7 @@ from recommender.data.recommendation.recommendation import Recommendation
 from recommender.business.search_client import SearchClient
 from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
 from recommender.recommend.recommender import Recommender
-from recommender.session.search_session import SearchSession
+from recommender.data.recommendation.search_session import SearchSession
 
 
 class RecommendationManager:
@@ -22,6 +22,7 @@ class RecommendationManager:
             search_request=search_session.search_request,
             rejected_recommendations=search_session.rejected_recommendations,
             maybe_recommendations=search_session.maybe_recommendations,
+            accepted_recommendations=[]
         )
         return self.__recommender.recommend(recommendation_engine_input)
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict
 
-from recommender.data.serializable import serializable
+from recommender.data.serializable import serializable_persistence_object
 
 
-@serializable
+@serializable_persistence_object
 @dataclass
 class Address:
     country: str
