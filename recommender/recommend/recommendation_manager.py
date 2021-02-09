@@ -22,7 +22,7 @@ class RecommendationManager:
             search_request=search_session.search_request,
             rejected_recommendations=search_session.rejected_recommendations,
             maybe_recommendations=search_session.maybe_recommendations,
-            accepted_recommendations=[]
+            accepted_recommendations=search_session.accepted_recommendations
         )
         return self.__recommender.recommend(recommendation_engine_input)
 

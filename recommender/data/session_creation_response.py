@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from recommender.data.recommendation.displayable_recommendation import (
     DisplayableRecommendation,
@@ -11,3 +12,4 @@ from recommender.data.serializable import serializable_persistence_object
 class SessionCreationResponse:
     session_id: str
     recommendation: DisplayableRecommendation
+    dinner_party_id: Optional[str]

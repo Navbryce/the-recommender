@@ -14,6 +14,7 @@ from recommender.data.recommendation.search_session_status import SearchSessionS
 class DisplayableSearchSession:
     id: str
     search_request: BusinessSearchRequest
+    dinner_party_id: str
     maybe_recommendations: [DisplayableRecommendation]
     rejected_recommendations: [DisplayableRecommendation]
     session_status: SearchSessionStatus

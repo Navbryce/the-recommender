@@ -35,12 +35,15 @@ def new_search_session() -> SessionCreationResponse:
     search_request = BusinessSearchRequest.from_dict(request.json['businessSearchParameters'])
 
     dinner_party_active_id: Optional[str] = request.json['dinnerPartyActiveId']
-    session = session_manager.new_session(search_request, dinner_party_active_id=dinner_party_active_id)
-    business_recommendation: DisplayableRecommendation = session_manager.get_first_recommendation(
+    session = session_manager.new_session(search_request=search_request,
+                                          dinner_party_active_id=dinner_party_active_id)
+    business_recommendation: DisplayableRecommendation = session_manager.get_next_recommendation_for_session(
         session_id=session.id
     )
     return SessionCreationResponse(
-        session_id=session.id, recommendation=business_recommendation
+        session_id=session.id,
+        recommendation=business_recommendation,
+        dinner_party_id=session.dinner_party_id
     )
 
 
@@ -66,21 +69,16 @@ def apply_recommendation_action(session_id: str) -> Optional[DisplayableRecommen
         recommendation_action_as_string
     ]
 
-    if recommendation_action == RecommendationAction.ACCEPT:
-        session_manager.accept_recommendation(session_id, recommendation_id)
-        return None
-
     is_current = request.json["isCurrent"]
     if is_current:
-        return session_manager.get_next_recommendation(
+        session_manager.apply_recommendation_action_to_current(
             session_id=session_id,
             current_recommendation_id=recommendation_id,
             recommendation_action=recommendation_action,
         )
+        return session_manager.get_next_recommendation_for_session(session_id=session_id)
     else:
-        if recommendation_action == RecommendationAction.MAYBE:
-            raise ValueError(
-                'Cannot "Maybe" a recommendation that has already had the action applied to it'
-            )
-        session_manager.reject_maybe_recommendation(session_id, recommendation_id)
+        session_manager.apply_action_to_maybe(session_id=session_id,
+                                              recommendation_id=recommendation_id,
+                                              recommendation_action=recommendation_action)
         return None

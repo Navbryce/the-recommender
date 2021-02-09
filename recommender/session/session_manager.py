@@ -69,6 +69,7 @@ class SessionManager:
             id=session_id,
             search_request=search_session.search_request,
             session_status=search_session.session_status,
+            dinner_party_id=search_session.dinner_party_id,
             **displayable_recommendations_dict,
         )
 
@@ -93,34 +94,12 @@ class SessionManager:
         db_session.commit()
         return new_session
 
-    def get_first_recommendation(self, session_id) -> DisplayableRecommendation:
-        db_session = DbSession()
-        return self.__get_next_recommendation_for_session(
-            db_session, SearchSession.get_session_by_id(db_session, session_id)
-        )
-
-    def reject_maybe_recommendation(self, session_id: str, recommendation_id: str):
-        db_session = DbSession()
-        current_session: SearchSession = SearchSession.get_session_by_id(
-            db_session, session_id
-        )
-
-        if recommendation_id not in current_session.maybe_recommendation_ids:
-            raise ValueError(
-                f"Could not find a recommendation {recommendation_id} in maybe recommendations for session {session_id}"
-            )
-
-        Recommendation.get_recommendation_by_key(
-            db_session, session_id, recommendation_id
-        ).status = RecommendationAction.REJECT
-        db_session.commit()
-
-    def get_next_recommendation(
+    def apply_recommendation_action_to_current(
             self,
             session_id: str,
             current_recommendation_id: str,
             recommendation_action: RecommendationAction,
-    ) -> DisplayableRecommendation:
+    ):
         db_session = DbSession()
         current_session: SearchSession = SearchSession.get_session_by_id(
             db_session, session_id
@@ -138,86 +117,94 @@ class SessionManager:
         if recommendation_action == RecommendationAction.MAYBE:
             current_session.maybe_recommendations.append(current_recommendation)
             current_recommendation.status = RecommendationAction.MAYBE
-        else:
+        elif recommendation_action == RecommendationAction.REJECT:
             current_session.rejected_recommendations.append(current_recommendation)
             current_recommendation.status = RecommendationAction.REJECT
+        else:
+            current_session.accepted_recommendations.append(current_recommendation)
+            current_recommendation.status = RecommendationAction.ACCEPT
+            db_session.commit() # complete transaction so rcv_manager can add candidate for SqlLite
+            if current_session.is_dinner_party:
+                self.__rcv_manager.add_candidate(
+                    active_id=current_session.dinner_party.active_id,
+                    business_id=current_recommendation_id,
+                    user_id=None
+                )
+            else:
+                self.__complete_session(db_session=db_session,
+                                        current_session=current_session)
 
         db_session.commit()
         current_session.current_recommendation = None
-        return self.__get_next_recommendation_for_session(db_session, current_session)
 
-    def __get_next_recommendation_for_session(
-            self, db_session: Session, search_session: SearchSession
-    ):
+    def get_next_recommendation_for_session(
+            self,
+            session_id: str
+    ) -> DisplayableRecommendation:
+        db_session = DbSession()
+        search_session: SearchSession = SearchSession.get_session_by_id(db_session, session_id)
+        if search_session.current_recommendation is not None:
+            raise ValueError("Cannot get a new recommendation. The search session has a current recommendation")
+
+        if search_session.is_complete:
+            return None
+
         recommendation: Recommendation = self.__recommendation_manager.generate_new_recommendation_for_session(
             search_session
         )
-        search_session.current_recommendation = recommendation
+        db_session.add(recommendation)
         db_session.commit()
         return self.__recommendation_manager.get_displayable_recommendation_from_recommendation(
             recommendation
         )
 
-    def accept_recommendation(self, session_id: str, accepted_rec_id: str):
+    def apply_action_to_maybe(self,
+                              session_id: str,
+                              recommendation_id: str,
+                              recommendation_action: RecommendationAction):
         db_session = DbSession()
-        current_session: SearchSession = SearchSession.get_session_by_id(
-            db_session, session_id
-        )
-        if (
-                accepted_rec_id != current_session.current_recommendation_id
-                and (current_session.is_dinner_party or accepted_rec_id not in current_session.maybe_recommendation_ids)
-        ):
-            raise ValueError(
-                f"Unknown recommendation of id {accepted_rec_id} for session {current_session.id}"
-            )
+        current_session: SearchSession = SearchSession.get_session_by_id(db_session, session_id)
+
+        if recommendation_action == RecommendationAction.MAYBE:
+            raise ValueError(f"Cannot maybe a recommendation that is already maybed")
 
         if current_session.is_dinner_party:
-            self.__accept_recommendation(db_session=db_session,
-                                         current_session=current_session,
-                                         accepted_rec_id=accepted_rec_id)
+            raise ValueError("Cannot apply maybe recommendation to dinner party search session")
+
+        if recommendation_id not in current_session.maybe_recommendation_ids:
+            raise ValueError(f"Recommendation of id {recommendation_id} not in maybe recommendations")
+
+        recommendation = Recommendation.get_recommendation_by_key(
+            db_session, current_session.id, recommendation_id
+        )
+
+        recommendation.status = recommendation_action
+        current_session.maybe_recommendations = [rec for rec in current_session.maybe_recommendations if
+                                                 rec.business_id != recommendation_id]
+
+        if recommendation_action == RecommendationAction.ACCEPT:
+            current_session.accepted_recommendations.append(recommendation)
+            recommendation.session_id = session_id  # ORM workaround
+            self.__complete_session(db_session=db_session,
+                                    current_session=current_session)
+        elif recommendation_action == RecommendationAction.REJECT:
+            current_session.rejected_recommendations.append(recommendation)
         else:
-            self.__accept_recommendation_and_complete_session(db_session=db_session,
-                                                              current_session=current_session,
-                                                              accepted_rec_id=accepted_rec_id)
+            raise ValueError(f"Unsupported operation to a maybe operation: {recommendation_action}")
         db_session.commit()
 
-    def __accept_recommendation_and_complete_session(self,
-                                                     db_session: DbSession,
-                                                     current_session: SearchSession,
-                                                     accepted_rec_id: str):
-        self.__accept_recommendation(db_session, current_session, accepted_rec_id)
-        possible_recommendations_to_reject = (
-                current_session.maybe_recommendation_ids
-                + [current_session.current_recommendation_id]
-        )
-        recommendation_ids_to_reject = [
-            rec_id
-            for rec_id in possible_recommendations_to_reject
-            if rec_id != accepted_rec_id
-        ]
-        for rec_id in recommendation_ids_to_reject:
+    def __complete_session(self,
+                           db_session: DbSession,
+                           current_session: SearchSession):
+        recommendations_ids_to_reject = []
+        if not current_session.is_dinner_party:
+            recommendations_ids_to_reject.extend(current_session.maybe_recommendation_ids)
+        if current_session.current_recommendation_id is not None:
+            recommendations_ids_to_reject.append(current_session.current_recommendation_id)
+
+        for rec_id in recommendations_ids_to_reject:
             Recommendation.get_recommendation_by_key(
                 db_session, current_session.id, rec_id
             ).status = RecommendationAction.REJECT
+
         current_session.session_status = SearchSessionStatus.COMPLETE
-
-    def __accept_recommendation_and_add_as_candidate(self,
-                                db_session: DbSession,
-                                current_session: SearchSession,
-                                accepted_rec_id: str):
-        Recommendation.get_recommendation_by_key(
-            db_session, current_session.id, accepted_rec_id
-        ).status = RecommendationAction.ACCEPT
-        self.__rcv_manager.add_candidate(
-            active_id=current_session.dinner_party.active_id,
-            business_id=accepted_rec_id,
-            user_id=None
-        )
-
-    def __accept_recommendation(self,
-                               db_session: DbSession,
-                               current_session: SearchSession,
-                               accepted_rec_id: str):
-        Recommendation.get_recommendation_by_key(
-            db_session, current_session.id, accepted_rec_id
-        ).status = RecommendationAction.ACCEPT

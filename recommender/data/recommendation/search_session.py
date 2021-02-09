@@ -45,6 +45,10 @@ class SearchSession(DbBase):
     dinner_party: Optional[Election] = relationship("Election", uselist=False)
 
     @property
+    def is_complete(self) -> bool:
+        return self.session_status == SearchSessionStatus.COMPLETE
+
+    @property
     def is_dinner_party(self) -> bool:
         return self.dinner_party_id is not None
 
@@ -52,19 +56,23 @@ class SearchSession(DbBase):
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.ACCEPT),
         uselist=True,
+        viewonly=True
     )
     current_recommendation: Optional[Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(None),
         uselist=False,
+        viewonly=True
     )
     maybe_recommendations: [Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.MAYBE),
+        viewonly=True
     )
     rejected_recommendations: [Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.REJECT),
+        viewonly=True
     )
 
     @property
@@ -74,7 +82,7 @@ class SearchSession(DbBase):
     @property
     def accepted_recommendation_ids(self) -> [str]:
         return [
-            recommendation.business_id for recommendation in self.accepted_recommendation_ids
+            recommendation.business_id for recommendation in self.accepted_recommendations
         ]
 
     @property
