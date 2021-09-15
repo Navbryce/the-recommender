@@ -12,6 +12,7 @@ from recommender.api.utils.json_content_type import (
 from recommender.data.auth.user import SerializableBasicUser, SerializableFullUser
 from recommender.auth.user_manager import UserManager
 from recommender.env_config import PROD
+from recommender.utilities.json_encode_utilities import to_serializable_dict
 
 AUTH_SECRET = os.environ["AUTH_SECRET"]
 JWT_ENCRYPTION = "HS256"
@@ -34,7 +35,7 @@ class AuthRouteUtils:
         return wrapped
 
     def require_user_route(
-        self
+            self
     ) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
         def decorator(route: Callable[..., Response]) -> Callable[..., Response]:
             def wrapped(*args, **kwargs):
@@ -59,38 +60,9 @@ class AuthRouteUtils:
             raise AuthorizationException()
         g.user = user
 
-    """
-    DEPRECATE
-    """
-
-    def use_or_create_user_route(
-        self, route: Callable[..., object]
-    ) -> Callable[..., Response]:
-        def wrapped(*args, **kwargs):
-            user_maybe: Optional[SerializableBasicUser] = self.get_user_from_session(
-                request
-            )
-            user = (
-                user_maybe
-                if user_maybe is not None
-                else self.user_manager.create_anonymous_user_and_generate_name().to_serializable_user()
-            )
-
-            data = route(*args, **kwargs, user=user)
-
-            if user_maybe is None:
-                return self.generate_user_created_response_and_login(
-                    data=data, serializable_created_user=user
-                )
-            else:
-                return generate_data_json_response(data)
-
-        wrapped.__name__ = route.__name__
-
-        return wrapped
 
     def get_user_from_session(
-        self, request: Request
+            self, request: Request
     ) -> Optional[SerializableBasicUser]:
         if USER_COOKIE_KEY not in request.cookies:
             return None
@@ -106,27 +78,12 @@ class AuthRouteUtils:
         else:
             return SerializableBasicUser(**payload)
 
-    def generate_user_created_response_and_login(
-        self,
-        serializable_created_user: SerializableBasicUser,
-        data: Optional[any] = None,
-        **kwargs
-    ) -> Response:
-        response = generate_json_response(
-            data=data,
-            additional_root_params={"createdUser": serializable_created_user},
-            **kwargs
-        )
-        self.login_as_user(response, serializable_created_user)
-        return response
-
     """
     ASSUMES USER identity has been verified
     """
 
-    def login_as_user(self, response: Response, user: SerializableBasicUser):
-        payload = {**user.__dict__, "type": user.__class__.__name__}
-        jwt_payload = jwt.encode(payload, AUTH_SECRET, algorithm=JWT_ENCRYPTION)
+    def login_as_user(self, response: Response, serializable_user: SerializableBasicUser):
+        jwt_payload = jwt.encode(to_serializable_dict(serializable_user, normalize_keys=False), AUTH_SECRET, algorithm=JWT_ENCRYPTION)
         response.set_cookie(
             key=USER_COOKIE_KEY, value=jwt_payload, secure=PROD, httponly=True
         )

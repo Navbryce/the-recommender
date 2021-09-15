@@ -35,7 +35,7 @@ class HttpException(Exception):
             raise ValueError("No error code or status code provided")
         if error_code:
             status_code = error_code.status_code
+            self.error_code = error_code.code_value
         self.message = message
         self.status_code = status_code
-        self.error_code = error_code.code_value
         super().__init__(message)

@@ -77,7 +77,7 @@ class SearchSession(DbBase):
 
     @property
     def current_recommendation_id(self) -> str:
-        return self.current_recommendation.business_id
+        return None if self.current_recommendation is None else self.current_recommendation.business_id
 
     @property
     def accepted_recommendation_ids(self) -> [str]:

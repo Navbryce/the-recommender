@@ -91,6 +91,7 @@ class Election(DbBase):
         String(length=36), ForeignKey(BasicUser.id), nullable=False
     )
 
+    election_creator = relationship("BasicUser", uselist=False)
     candidates: [Candidate] = relationship("Candidate")
 
     __table_args__ = (Index("active_id", active_id, election_completed_at),)

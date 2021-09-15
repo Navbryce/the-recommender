@@ -4,7 +4,6 @@ from flask import Blueprint, request
 
 from recommender.api.global_services import business_manager
 from recommender.api.rcv_route import rcv_manager
-from recommender.api.utils.http_exception import HttpException, ErrorCode
 from recommender.api.utils.json_content_type import json_content_type
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
@@ -15,7 +14,6 @@ from recommender.data.recommendation.displayable_recommendation import (
 from recommender.data.recommendation.displayable_search_session import DisplayableSearchSession
 from recommender.data.recommendation.recommendation_action import RecommendationAction
 from recommender.data.session_creation_response import SessionCreationResponse
-from recommender.db_config import DbSession
 from recommender.recommend.recommendation_manager import RecommendationManager
 from recommender.recommend.recommender import Recommender
 from recommender.session.session_manager import SessionManager

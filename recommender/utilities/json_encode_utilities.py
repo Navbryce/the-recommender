@@ -5,10 +5,10 @@ from typing import Dict, Union, List
 
 
 def json_encode(data: any) -> str:
-    return json.dumps(__to_serializable(data))
+    return json.dumps(to_serializable_dict(data))
 
 
-def __to_serializable(data: any) -> Union[List[any], Dict[str, any]]:
+def to_serializable_dict(data: any, normalize_keys=True) -> Union[List[any], Dict[str, any]]:
     if __is_directly_serializable(data):
         raise ValueError("Should only be instances of objects")
 
@@ -23,7 +23,7 @@ def __to_serializable(data: any) -> Union[List[any], Dict[str, any]]:
         )
 
     return {
-        __to_camel_case(key): __convert_value_to_serializable(value)
+        __to_camel_case(key) if normalize_keys else key: __convert_value_to_serializable(value)
         for key, value in data_dict.items()
     }
 
@@ -40,7 +40,7 @@ def __convert_value_to_serializable(value):
         return value.name
     if isinstance(value, datetime):
         return str(value)
-    return __to_serializable(value)
+    return to_serializable_dict(value)
 
 
 __DIRECTLY_SERIALIZABLE = [str, bool, int, float]

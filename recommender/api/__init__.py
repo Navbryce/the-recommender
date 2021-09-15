@@ -18,7 +18,9 @@ from recommender.env_config import PROD
 def start_api(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    CORS(app)
+    CORS(app,
+         origins=os.environ["FE_ORIGIN"],
+         supports_credentials=True)
     Talisman(
         app,
         force_https=PROD,

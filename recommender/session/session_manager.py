@@ -80,7 +80,7 @@ class SessionManager:
 
         dinner_party_id = None
         if dinner_party_active_id is not None:
-            dinner_party = self.__rcv_manager.get_election_by_active_id(dinner_party_active_id)
+            dinner_party = self.__rcv_manager.get_active_election_by_active_id(dinner_party_active_id)
             if dinner_party is None:
                 raise HttpException(
                     message=f"Election with active id {dinner_party_active_id} not found",
@@ -114,6 +114,9 @@ class SessionManager:
         current_recommendation: Recommendation = Recommendation.get_recommendation_by_key(
             db_session, session_id, current_recommendation_id
         )
+        if current_recommendation is None:
+            return ValueError(f"Attempting to {recommendation_action} recommendation of id {current_recommendation_id},"
+                              f"but current recommendation is None. This indicates the state of the session is incorrect.")
         if recommendation_action == RecommendationAction.MAYBE:
             current_session.maybe_recommendations.append(current_recommendation)
             current_recommendation.status = RecommendationAction.MAYBE

@@ -3,11 +3,9 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import String, Column, Boolean
 
-from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
 
-@serializable_persistence_object
 @dataclass
 class SerializableBasicUser:
     id: str
@@ -19,8 +17,13 @@ class SerializableBasicUser:
         self.nickname = nickname
         self.is_admin = is_admin
 
+    def __getstate__(self):
+        return {
+            **self.__dict__,
+            "type": self.__class__.__name__
+        }
 
-@serializable_persistence_object
+
 @dataclass
 class SerializableFullUser(SerializableBasicUser):
     email: str

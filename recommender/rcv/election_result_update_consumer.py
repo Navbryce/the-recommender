@@ -2,6 +2,7 @@ from collections import Counter
 import random
 from typing import Final, Tuple, List, Dict
 
+from recommender.api.utils.server_sent_event import ServerSentEvent
 from recommender.data.rcv.candidate_round_result import CandidateRoundResult
 from recommender.data.rcv.election import Election
 from recommender.data.rcv.round import Round
@@ -9,7 +10,6 @@ from recommender.data.rcv.round_action import RoundAction
 from recommender.db_config import DbSession
 from recommender.rcv.election_update_stream import (
     ElectionUpdateStream,
-    ElectionUpdateEvent,
     ElectionUpdateEventType,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
@@ -39,7 +39,7 @@ class ElectionResultUpdateConsumer:
         )
         db_session.commit()
         ElectionUpdateStream.for_election(election_id).publish_message(
-            ElectionUpdateEvent(
+            ServerSentEvent(
                 type=ElectionUpdateEventType.RESULTS_UPDATED, payload=None
             )
         )

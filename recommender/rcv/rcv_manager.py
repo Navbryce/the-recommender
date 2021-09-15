@@ -7,8 +7,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 
 from recommender.api.utils.http_exception import HttpException, ErrorCode
+from recommender.api.utils.server_sent_event import ServerSentEvent
 from recommender.business.business_manager import BusinessManager
 from recommender.data.auth.user import SerializableBasicUser
+from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.db_utils import is_unique_key_error
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
@@ -18,8 +20,7 @@ from recommender.db_config import DbSession
 from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 from recommender.rcv.election_update_stream import (
     ElectionUpdateStream,
-    ElectionUpdateEvent,
-    ElectionUpdateEventType,
+    ElectionUpdateEventType, CandidateAddedEvent,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
 
@@ -32,7 +33,7 @@ class RCVManager:
         self.__business_manager = business_manager
 
     def create_election(
-        self, user: SerializableBasicUser
+            self, user: SerializableBasicUser
     ) -> Election:
         db_session = DbSession()
         election_id = str(uuid4())
@@ -65,10 +66,9 @@ class RCVManager:
         return Election.get_election_by_id(db_session=db_session,
                                            id=id)
 
-    def get_election_by_active_id(self, active_id: str) -> Election:
+    def get_active_election_by_active_id(self, active_id: str) -> Election:
         db_session = DbSession()
         return Election.get_active_election_by_active_id(db_session, active_id)
-
 
     def add_candidate(self, active_id: str, business_id: str, user_id: str) -> bool:
         db_session = DbSession()
@@ -106,10 +106,9 @@ class RCVManager:
             if is_unique_key_error(error):
                 return False
             raise error
+        business: DisplayableBusiness = self.__business_manager.get_displayable_business(business_id=business_id)
         ElectionUpdateStream.for_election(partial_election.id).publish_message(
-            ElectionUpdateEvent(
-                type=ElectionUpdateEventType.CANDIDATE_ADDED, payload=business_id
-            )
+           CandidateAddedEvent(business_id=business_id, name=business.name)
         )
         return True
 
@@ -140,11 +139,11 @@ class RCVManager:
         )
 
     def mark_election_as_complete(
-        self, election_id: str, complete_reason: ElectionStatus
+            self, election_id: str, complete_reason: ElectionStatus
     ):
         if (
-            complete_reason != ElectionStatus.MANUALLY_COMPLETE
-            or complete_reason != ElectionStatus.MARKED_COMPLETE
+                complete_reason != ElectionStatus.MANUALLY_COMPLETE
+                or complete_reason != ElectionStatus.MARKED_COMPLETE
         ):
             raise ValueError(f"Invalid complete reason: {complete_reason.value}")
 
@@ -169,10 +168,10 @@ class RCVManager:
         )
 
     def __push_election_status_change_to_update_stream(
-        self, election_id: str, new_status: ElectionStatus
+            self, election_id: str, new_status: ElectionStatus
     ):
         ElectionUpdateStream.for_election(election_id).publish_message(
-            ElectionUpdateEvent(
+            ServerSentEvent(
                 ElectionUpdateEventType.STATUS_CHANGED, new_status.value
             )
         )
@@ -254,9 +253,9 @@ class RCVManager:
         """
         fetch_result = rcv_vote_queue.fetch_job(election.id)
         if (
-            fetch_result is None
-            or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
-            or fetch_result.get_status(refresh=False) == JobStatus.FAILED
+                fetch_result is None
+                or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
+                or fetch_result.get_status(refresh=False) == JobStatus.FAILED
         ):
             rcv_vote_queue.enqueue(
                 self.__election_result_update_consumer.consume,
@@ -267,10 +266,10 @@ class RCVManager:
     def get_election_update_stream(self, election_id: str) -> ElectionUpdateStream:
         db_session = DbSession()
         if (
-            Election.get_election_by_id(
-                db_session, election_id, lambda x: x.options(load_only(Election.id))
-            )
-            is None
+                Election.get_election_by_id(
+                    db_session, election_id, lambda x: x.options(load_only(Election.id))
+                )
+                is None
         ):
             raise HttpException(
                 message=f"Election with id: {election_id} not found", status_code=404

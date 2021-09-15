@@ -1,12 +1,12 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from flask import Blueprint, Response, request
 
 from recommender.api import json_content_type
 from recommender.api.global_services import business_manager, auth_route_utils
 from recommender.data.auth.user import SerializableBasicUser
-from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election import Election
+from recommender.data.rcv.election_metadata_response import ElectionMetadataResponse
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.rcv.rcv_manager import RCVManager
 
@@ -16,29 +16,34 @@ rcv = Blueprint("rcv", __name__)
 
 
 @rcv.route("", methods=["PUT"])
-@auth_route_utils.use_or_create_user_route
-def new_rcv(user: SerializableBasicUser) -> Dict[str, Dict[str, str]]:
-    election = rcv_manager.create_election(user=user)
-
-    data = {"election": {
-        "id": election.id,
-        "activeCode": election.active_id
-    }}
-
-    return data
+@auth_route_utils.require_user_route()
+@json_content_type()
+def new_rcv(user: SerializableBasicUser) -> ElectionMetadataResponse:
+    return election_to_metadata_response(rcv_manager.create_election(user=user))
 
 
 @rcv.route("", methods=["GET"])
 @json_content_type()
-def get_active_election_info() -> [Candidate]:
-    # switch over to use query parameters to determine fields
-    # update to return displayable businesses
+def get_active_election_metadata() -> Optional[ElectionMetadataResponse]:
     active_id = request.json["electionCode"]
-    return rcv_manager.get_candidates(active_id)
+    election = rcv_manager.get_active_election_by_active_id(active_id=active_id)
+    if election is None:
+        return None
+    return election_to_metadata_response(election)
+
+
+def election_to_metadata_response(election: Election) -> ElectionMetadataResponse:
+    return ElectionMetadataResponse(
+        id=election.id,
+        active_id=election.active_id,
+        election_status=election.election_status
+    )
+
 
 @rcv.route("/<election_id>", methods=["GET"])
 @json_content_type()
 def get_election(election_id: str) -> Election:
+    rcv_manager.get_active_election_by_active_id(election_id)
     output = rcv_manager.get_election_by_id(election_id)
     return output
 
