@@ -1,5 +1,6 @@
 import random
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 
 from rq.job import JobStatus
@@ -8,11 +9,13 @@ from sqlalchemy.orm import load_only
 
 from recommender.api.utils.http_exception import HttpException, ErrorCode
 from recommender.api.utils.server_sent_event import ServerSentEvent
+from recommender.auth.user_manager import UserManager
 from recommender.business.business_manager import BusinessManager
 from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.db_utils import is_unique_key_error
 from recommender.data.rcv.candidate import Candidate
+from recommender.data.rcv.displayable_election import DisplayableElection, DisplayableCandidate
 from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
@@ -20,7 +23,7 @@ from recommender.db_config import DbSession
 from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 from recommender.rcv.election_update_stream import (
     ElectionUpdateStream,
-    ElectionUpdateEventType, CandidateAddedEvent,
+    ElectionUpdateEventType, CandidateAddedEvent, StatusChangedEvent,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
 
@@ -28,9 +31,11 @@ from recommender.rcv.rcv_queue_config import rcv_vote_queue
 class RCVManager:
     __business_manager: BusinessManager
     __election_result_update_consumer: ElectionResultUpdateConsumer = ElectionResultUpdateConsumer()
+    __user_manager: UserManager
 
-    def __init__(self, business_manager: BusinessManager):
+    def __init__(self, business_manager: BusinessManager, user_manager: UserManager):
         self.__business_manager = business_manager
+        self.__user_manager = user_manager
 
     def create_election(
             self, user: SerializableBasicUser
@@ -61,10 +66,19 @@ class RCVManager:
             ]
         )
 
-    def get_election_by_id(self, id: str) -> Election:
+    def get_displayable_election_by_id(self, id: str) -> Optional[DisplayableElection]:
         db_session = DbSession()
-        return Election.get_election_by_id(db_session=db_session,
-                                           id=id)
+        election = Election.get_election_by_id(db_session=db_session, id=id)
+        if election is None:
+            return None
+        return DisplayableElection(
+            id=election.id,
+            active_id=election.active_id,
+            election_status=election.election_status,
+            candidates=[DisplayableCandidate(business_id=candidate.business_id,
+                                                name=self.__business_manager.get_displayable_business(candidate.business_id).name,
+                                             nominator_nickname=candidate.nominator.nickname)
+                           for candidate in election.candidates])
 
     def get_active_election_by_active_id(self, active_id: str) -> Election:
         db_session = DbSession()
@@ -97,7 +111,7 @@ class RCVManager:
             election_id=partial_election.id,
             business_id=business_id,
             distance=0,
-            creator_id=user_id,
+            nominator_id=user_id,
         )
         db_session.add(candidate)
         try:
@@ -106,9 +120,12 @@ class RCVManager:
             if is_unique_key_error(error):
                 return False
             raise error
+        # TODO: Accelerate fetching process here
         business: DisplayableBusiness = self.__business_manager.get_displayable_business(business_id=business_id)
+        # TODO: Maybe just pass the name stored within the cookie instead of refetching from the database
+        nickname = self.__user_manager.get_nickname_by_user_id(user_id)
         ElectionUpdateStream.for_election(partial_election.id).publish_message(
-           CandidateAddedEvent(business_id=business_id, name=business.name)
+           CandidateAddedEvent(business_id=business_id, name=business.name, nominator_nickname=nickname if nickname is not None else "Unknown")
         )
         return True
 
@@ -126,6 +143,10 @@ class RCVManager:
                 message=f"Election with election id: {election_id} not found",
                 status_code=404,
             )
+        # TODO: Refactor election status "is already status" check (not changing) for both move_election_to_voting and
+        #  mark_as_complete into one function that fetches the partial electoin
+        if partial_election.election_status == ElectionStatus.VOTING:
+            return
         if partial_election.election_status != ElectionStatus.IN_CREATION:
             raise InvalidElectionStateException(
                 message=f"Cannot move an election to status {ElectionStatus.VOTING.name} when status is {partial_election.election_status.value}"
@@ -156,6 +177,9 @@ class RCVManager:
                 load_only(Election.id, Election.election_status)
             ),
         )
+        if partial_election == complete_reason:
+            return
+
         if partial_election.election_status != ElectionStatus.VOTING:
             raise InvalidElectionStateException(
                 message=f"Cannot move an election to complete with status: {partial_election.election_status.value}"
@@ -171,9 +195,7 @@ class RCVManager:
             self, election_id: str, new_status: ElectionStatus
     ):
         ElectionUpdateStream.for_election(election_id).publish_message(
-            ServerSentEvent(
-                ElectionUpdateEventType.STATUS_CHANGED, new_status.value
-            )
+            StatusChangedEvent(new_status)
         )
 
     def get_candidates(self, active_id: str) -> [Candidate]:

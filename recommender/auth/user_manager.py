@@ -2,6 +2,8 @@ import os
 from typing import Optional
 from uuid import uuid4
 
+from sqlalchemy.orm import load_only
+
 from recommender.data.auth.user import (
     BasicUser,
     SerializableFullUser,
@@ -26,7 +28,7 @@ class UserManager:
 
         return user
 
-    def get_user(self, email: str, password: str) -> Optional[SerializableBasicUser]:
+    def authenticate_user(self, email: str, password: str) -> Optional[SerializableBasicUser]:
         # Hard code in admin account
         if email == os.environ["ADMIN_EMAIL"] and password == os.environ["ADMIN_PASS"]:
             return SerializableFullUser(
@@ -38,3 +40,10 @@ class UserManager:
                 is_admin=True,
             )
         return None
+
+    def get_nickname_by_user_id(self, id: str) -> Optional[str]:
+        if id == "Admin":
+            return "Admin"
+        else:
+            return BasicUser.get_user_by_id(DbSession(), id, lambda x: x.options(load_only(BasicUser.nickname))).nickname
+

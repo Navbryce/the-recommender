@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 from sqlalchemy import (
     String,
@@ -32,7 +32,7 @@ class Election(DbBase):
         db_session: Session,
         id: str,
         query_modifier: Callable[[Query], Query] = lambda x: x,
-    ) -> Election:
+    ) -> Optional[Election]:
         return query_modifier(db_session.query(Election)).filter_by(id=id).first()
 
     @staticmethod
@@ -40,7 +40,7 @@ class Election(DbBase):
         db_session: Session,
         active_id: str,
         query_modifier: Callable[[Query], Query] = lambda x: x,
-    ) -> Election:
+    ) -> Optional[Election]:
         return (
             query_modifier(db_session.query(Election))
             .filter_by(active_id=active_id, election_completed_at=None)
@@ -92,6 +92,6 @@ class Election(DbBase):
     )
 
     election_creator = relationship("BasicUser", uselist=False)
-    candidates: [Candidate] = relationship("Candidate")
+    candidates: List[Candidate] = relationship("Candidate")
 
     __table_args__ = (Index("active_id", active_id, election_completed_at),)

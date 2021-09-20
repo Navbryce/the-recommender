@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Callable
 
 from sqlalchemy import String, Column, Enum, ForeignKey
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import relationship, Session, Query
 
+from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.election import Election
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
@@ -29,8 +30,10 @@ def generate_recommendation_join_on_status(
 @serializable_persistence_object
 class SearchSession(DbBase):
     @staticmethod
-    def get_session_by_id(db_session: Session, session_id: str) -> SearchSession:
-        return db_session.query(SearchSession).filter_by(id=session_id).first()
+    def get_session_by_id(db_session: Session,
+                          session_id: str,
+                          query_modifier: Callable[[Query], Query] = lambda x: x) -> Optional[SearchSession]:
+        return query_modifier(db_session.query(SearchSession)).filter_by(id=session_id).first()
 
     __tablename__ = "search_session"
 
@@ -42,7 +45,12 @@ class SearchSession(DbBase):
     dinner_party_id: Optional[str] = Column(
         String(length=36), ForeignKey("election.id"), default=None
     )
+    created_by_id: Optional[str] = Column(
+        String(length=36), ForeignKey(BasicUser.id), nullable=True, default=None
+    )
+
     dinner_party: Optional[Election] = relationship("Election", uselist=False)
+    created_by: Optional[BasicUser] = relationship("BasicUser", uselist=False)
 
     @property
     def is_complete(self) -> bool:

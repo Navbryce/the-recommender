@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from recommender.api.utils.http_exception import HttpException, ErrorCode
+from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -75,7 +76,9 @@ class SessionManager:
 
     def new_session(self,
                     search_request: BusinessSearchRequest,
-                    dinner_party_active_id: Optional[str] = None) -> SearchSession:
+                    dinner_party_active_id: Optional[str],
+                    user_maybe: Optional[SerializableBasicUser],
+                    ) -> SearchSession:
         session_id = str(uuid4())
 
         dinner_party_id = None
@@ -88,7 +91,11 @@ class SessionManager:
                 )
             dinner_party_id = dinner_party.id
 
-        new_session = SearchSession(id=session_id, search_request=search_request, dinner_party_id=dinner_party_id)
+        new_session = SearchSession(id=session_id,
+                                    search_request=search_request,
+                                    dinner_party_id=dinner_party_id,
+                                    created_by_id=None if user_maybe is None else user_maybe.id
+                                    )
         db_session = DbSession()
         db_session.add(new_session)
         db_session.commit()
@@ -131,7 +138,7 @@ class SessionManager:
                 self.__rcv_manager.add_candidate(
                     active_id=current_session.dinner_party.active_id,
                     business_id=current_recommendation_id,
-                    user_id=None
+                    user_id=current_session.created_by_id,
                 )
             else:
                 self.__complete_session(db_session=db_session,

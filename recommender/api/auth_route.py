@@ -14,6 +14,7 @@ def register() -> Response:
     nickname = request.json["nickname"]
     user: BasicUser = user_manager.create_anonymous_user(nickname)
     serializable_user = user.to_serializable_user()
+    print("TEST", nickname)
 
     response = generate_data_json_response(serializable_user)
     auth_route_utils.login_as_user(response, serializable_user)
@@ -28,7 +29,7 @@ def login() -> Response:
         email = request.form["email"]
         password = request.form["password"]
 
-        user = user_manager.get_user(email, password)
+        user = user_manager.authenticate_user(email, password)
         if user is not None:
             response = generate_data_json_response(data=user)
             auth_route_utils.login_as_user(response=response, serializable_user=user)

@@ -41,7 +41,7 @@ class AuthRouteUtils:
             def wrapped(*args, **kwargs):
                 user = self.get_user_from_session(request)
                 if user is None:
-                    raise AuthorizationException()
+                    raise AuthenticationException()
                 return route(*args, **kwargs, user=user)
 
             wrapped.__name__ = route.__name__
@@ -57,7 +57,7 @@ class AuthRouteUtils:
     def require_user_before_request(self):
         user = self.get_user_from_session(request)
         if user is None:
-            raise AuthorizationException()
+            raise AuthenticationException()
         g.user = user
 
 
@@ -89,8 +89,14 @@ class AuthRouteUtils:
         )
 
 
-class AuthorizationException(HttpException):
+class AuthenticationException(HttpException):
     def __init__(self):
-        super(AuthorizationException, self).__init__(
+        super(AuthenticationException, self).__init__(
             message="User not logged in", status_code=401
+        )
+
+class AuthorizationException(HttpException):
+    def __init__(self, resource: str):
+        super(AuthorizationException, self).__init__(
+            message=f"Not authorized to access {resource}", status_code=403
         )

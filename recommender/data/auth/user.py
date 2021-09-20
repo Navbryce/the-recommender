@@ -1,7 +1,10 @@
 from __future__ import annotations
+
+from collections import Callable
 from dataclasses import dataclass, field
 
-from sqlalchemy import String, Column, Boolean
+from sqlalchemy import String, Column, Boolean, CheckConstraint
+from sqlalchemy.orm import Session, Query, validates
 
 from recommender.db_config import DbBase
 
@@ -32,16 +35,31 @@ class SerializableFullUser(SerializableBasicUser):
 
 
 class BasicUser(DbBase):
+    @staticmethod
+    def get_user_by_id(
+            db_session: Session,
+            id: str,
+            query_modifier: Callable[[Query], Query] = lambda x: x,
+    ) -> BasicUser:
+        return query_modifier(db_session.query(BasicUser)).filter_by(id=id).first()
+
     __tablename__ = "user"
 
     id: str = Column(String(length=36), primary_key=True)
-    nickname: str = Column(String(length=100))
-    type: str = Column(String(length=100))
+    nickname: str = Column(String(length=100), nullable=False)
+    type: str = Column(String(length=100) , nullable=False)
 
     def to_serializable_user(self) -> SerializableBasicUser:
         return SerializableBasicUser(id=self.id, nickname=self.nickname)
 
     __mapper_args__ = {"polymorphic_on": "type", "polymorphic_identity": "BasicUser"}
+    __table_args__ = (CheckConstraint("LENGTH(nickname) > 0"),)
+
+    @validates("nickname")
+    def validate_nickname(self, key: str, value: str):
+        if len(value) == 0:
+            raise ValueError("Nickname too short")
+        return value
 
 
 class FullUser(BasicUser):

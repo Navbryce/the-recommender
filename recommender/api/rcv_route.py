@@ -3,14 +3,14 @@ from typing import Dict, Optional
 from flask import Blueprint, Response, request
 
 from recommender.api import json_content_type
-from recommender.api.global_services import business_manager, auth_route_utils
+from recommender.api.global_services import business_manager, auth_route_utils, user_manager
 from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.rcv.election import Election
 from recommender.data.rcv.election_metadata_response import ElectionMetadataResponse
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.rcv.rcv_manager import RCVManager
 
-rcv_manager = RCVManager(business_manager)
+rcv_manager = RCVManager(business_manager, user_manager)
 
 rcv = Blueprint("rcv", __name__)
 
@@ -43,9 +43,7 @@ def election_to_metadata_response(election: Election) -> ElectionMetadataRespons
 @rcv.route("/<election_id>", methods=["GET"])
 @json_content_type()
 def get_election(election_id: str) -> Election:
-    rcv_manager.get_active_election_by_active_id(election_id)
-    output = rcv_manager.get_election_by_id(election_id)
-    return output
+    return rcv_manager.get_displayable_election_by_id(election_id)
 
 
 @rcv.route("/<election_id>/updates", methods=["GET"])
@@ -68,10 +66,10 @@ def add_candidate(user: SerializableBasicUser) -> Dict[str, bool]:
     return {"alreadyAdded": already_added}
 
 
-@rcv.route("/<election_id>/state", methods=["POST"])
+@rcv.route("/<election_id>/state", methods=["PUT"])
 @auth_route_utils.require_user_route()
 def update_election_state(user: SerializableBasicUser, election_id: str) -> Response:
-    # Verify auth updating state is the one who created the election
+    # TODO: Verify auth updating state is the one who created the election
     new_state = request.json["state"]
     if (
             new_state != ElectionStatus.VOTING.value
