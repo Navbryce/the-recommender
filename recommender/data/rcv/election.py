@@ -3,22 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Callable, Dict, List, Optional
 
-from sqlalchemy import (
-    String,
-    Column,
-    DateTime,
-    Index,
-    ForeignKey,
-    Enum,
-    func,
-)
-from sqlalchemy.orm import relationship, Session, Query, aliased
+from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Index, String, func
+from sqlalchemy.orm import Query, Session, aliased, relationship
 
 from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.candidate import Candidate
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
-from recommender.data.rcv.round import Round
 from recommender.data.serializable import serializable_persistence_object
 from recommender.db_config import DbBase
 
@@ -34,6 +25,12 @@ class Election(DbBase):
         query_modifier: Callable[[Query], Query] = lambda x: x,
     ) -> Optional[Election]:
         return query_modifier(db_session.query(Election)).filter_by(id=id).first()
+
+    @staticmethod
+    def update_election_by_id(db_session: Session, id: str, values: Dict[str, any]):
+        db_session.query(Election).filter_by(id=id).update(
+            values, synchronize_session=False
+        )
 
     @staticmethod
     def get_active_election_by_active_id(
@@ -75,10 +72,6 @@ class Election(DbBase):
             for user_id, rank_string in rankings_for_election
         }
 
-    @staticmethod
-    def delete_election_results_for_election(db_session: Session, election_id: str):
-        db_session.query(Round).filter_by(election_id=election_id).delete()
-
     __tablename__ = "election"
 
     id: str = Column(String(length=36), primary_key=True)
@@ -90,6 +83,7 @@ class Election(DbBase):
     election_creator_id: str = Column(
         String(length=36), ForeignKey(BasicUser.id), nullable=False
     )
+    election_result: str = Column("election_result", JSON)
 
     election_creator = relationship("BasicUser", uselist=False)
     candidates: List[Candidate] = relationship("Candidate")

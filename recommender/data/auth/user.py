@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections import Callable
 from dataclasses import dataclass, field
 
-from sqlalchemy import String, Column, Boolean, CheckConstraint
-from sqlalchemy.orm import Session, Query, validates
+from sqlalchemy import Boolean, CheckConstraint, Column, String
+from sqlalchemy.orm import Query, Session, validates
 
 from recommender.db_config import DbBase
 
@@ -21,10 +21,7 @@ class SerializableBasicUser:
         self.is_admin = is_admin
 
     def __getstate__(self):
-        return {
-            **self.__dict__,
-            "type": self.__class__.__name__
-        }
+        return {**self.__dict__, "type": self.__class__.__name__}
 
 
 @dataclass
@@ -37,9 +34,9 @@ class SerializableFullUser(SerializableBasicUser):
 class BasicUser(DbBase):
     @staticmethod
     def get_user_by_id(
-            db_session: Session,
-            id: str,
-            query_modifier: Callable[[Query], Query] = lambda x: x,
+        db_session: Session,
+        id: str,
+        query_modifier: Callable[[Query], Query] = lambda x: x,
     ) -> BasicUser:
         return query_modifier(db_session.query(BasicUser)).filter_by(id=id).first()
 
@@ -47,7 +44,7 @@ class BasicUser(DbBase):
 
     id: str = Column(String(length=36), primary_key=True)
     nickname: str = Column(String(length=100), nullable=False)
-    type: str = Column(String(length=100) , nullable=False)
+    type: str = Column(String(length=100), nullable=False)
 
     def to_serializable_user(self) -> SerializableBasicUser:
         return SerializableBasicUser(id=self.id, nickname=self.nickname)

@@ -3,10 +3,15 @@ from typing import Dict, Optional
 from flask import Blueprint, Response, request
 
 from recommender.api import json_content_type
-from recommender.api.global_services import business_manager, auth_route_utils, user_manager
+from recommender.api.global_services import (
+    auth_route_utils,
+    business_manager,
+    user_manager,
+)
 from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.rcv.election import Election
 from recommender.data.rcv.election_metadata_response import ElectionMetadataResponse
+from recommender.data.rcv.election_result import DisplayableElectionResult
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.rcv.rcv_manager import RCVManager
 
@@ -36,7 +41,7 @@ def election_to_metadata_response(election: Election) -> ElectionMetadataRespons
     return ElectionMetadataResponse(
         id=election.id,
         active_id=election.active_id,
-        election_status=election.election_status
+        election_status=election.election_status,
     )
 
 
@@ -44,6 +49,13 @@ def election_to_metadata_response(election: Election) -> ElectionMetadataRespons
 @json_content_type()
 def get_election(election_id: str) -> Election:
     return rcv_manager.get_displayable_election_by_id(election_id)
+
+
+# TODO: Maybe deprecate route with the fetch election route
+@rcv.route("/<election_id>/results", methods=["GET"])
+@json_content_type()
+def get_election_results(election_id: str) -> Optional[DisplayableElectionResult]:
+    return rcv_manager.get_election_results(election_id)
 
 
 @rcv.route("/<election_id>/updates", methods=["GET"])
@@ -72,8 +84,8 @@ def update_election_state(user: SerializableBasicUser, election_id: str) -> Resp
     # TODO: Verify auth updating state is the one who created the election
     new_state = request.json["state"]
     if (
-            new_state != ElectionStatus.VOTING.value
-            and new_state != ElectionStatus.MANUALLY_COMPLETE.value
+        new_state != ElectionStatus.VOTING.value
+        and new_state != ElectionStatus.MANUALLY_COMPLETE.value
     ):
         raise ValueError(f"Invalid input state: {new_state}")
 

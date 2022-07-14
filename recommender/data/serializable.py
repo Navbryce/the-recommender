@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import Dict, TypeVar, Type, Callable
-
+from typing import Callable, Dict, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -14,7 +13,9 @@ DEPRECATED
 """
 
 
-def serializable_persistence_object(cls: Type[T], get_serializable_attributes: Callable[[T], Dict] = None):
+def serializable_persistence_object(
+    cls: Type[T], get_serializable_attributes: Callable[[T], Dict] = None
+):
     def __getstate__(self) -> Dict:
         return {key: value for key, value in self.__dict__.items() if key[0] != "_"}
 

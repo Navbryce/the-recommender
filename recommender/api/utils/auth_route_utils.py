@@ -1,16 +1,16 @@
 import os
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import jwt
-from flask import Response, Request, request, g
+from flask import Request, Response, g, request
 
 from recommender.api.utils.http_exception import HttpException
 from recommender.api.utils.json_content_type import (
-    generate_json_response,
     generate_data_json_response,
+    generate_json_response,
 )
-from recommender.data.auth.user import SerializableBasicUser, SerializableFullUser
 from recommender.auth.user_manager import UserManager
+from recommender.data.auth.user import SerializableBasicUser, SerializableFullUser
 from recommender.env_config import PROD
 from recommender.utilities.json_encode_utilities import to_serializable_dict
 
@@ -35,7 +35,7 @@ class AuthRouteUtils:
         return wrapped
 
     def require_user_route(
-            self
+        self,
     ) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
         def decorator(route: Callable[..., Response]) -> Callable[..., Response]:
             def wrapped(*args, **kwargs):
@@ -60,9 +60,8 @@ class AuthRouteUtils:
             raise AuthenticationException()
         g.user = user
 
-
     def get_user_from_session(
-            self, request: Request
+        self, request: Request
     ) -> Optional[SerializableBasicUser]:
         if USER_COOKIE_KEY not in request.cookies:
             return None
@@ -82,8 +81,14 @@ class AuthRouteUtils:
     ASSUMES USER identity has been verified
     """
 
-    def login_as_user(self, response: Response, serializable_user: SerializableBasicUser):
-        jwt_payload = jwt.encode(to_serializable_dict(serializable_user, normalize_keys=False), AUTH_SECRET, algorithm=JWT_ENCRYPTION)
+    def login_as_user(
+        self, response: Response, serializable_user: SerializableBasicUser
+    ):
+        jwt_payload = jwt.encode(
+            to_serializable_dict(serializable_user, normalize_keys=False),
+            AUTH_SECRET,
+            algorithm=JWT_ENCRYPTION,
+        )
         response.set_cookie(
             key=USER_COOKIE_KEY, value=jwt_payload, secure=PROD, httponly=True
         )
@@ -94,6 +99,7 @@ class AuthenticationException(HttpException):
         super(AuthenticationException, self).__init__(
             message="User not logged in", status_code=401
         )
+
 
 class AuthorizationException(HttpException):
     def __init__(self, resource: str):

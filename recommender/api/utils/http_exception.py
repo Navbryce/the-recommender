@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 
 from recommender.data.serializable import serializable_persistence_object
 
@@ -25,9 +25,14 @@ class HttpException(Exception):
     message: str
     error_code: Optional[str] = None
     status_code: Optional[int] = None
+    additional_data: Dict[str, any] = None
 
     def __init__(
-            self, message: str, status_code: Optional[int] = None, error_code: Optional[ErrorCode] = None
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[ErrorCode] = None,
+        additional_data: Dict[str, any] = None,
     ):
         if error_code is not None and status_code is not None:
             raise ValueError("Provided both an error code and a status code")
@@ -38,4 +43,5 @@ class HttpException(Exception):
             self.error_code = error_code.code_value
         self.message = message
         self.status_code = status_code
+        self.additional_data = additional_data
         super().__init__(message)

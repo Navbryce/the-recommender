@@ -2,14 +2,15 @@ import os
 
 import rq_dashboard
 from flask import Flask, Response
+
 # We need to use an external dependency for env management because pycharm does not currently support .env files
 from flask_cors import CORS
 from flask_talisman import Talisman
 
 import recommender.utilities.json_encode_utilities
 from recommender.api.utils.json_content_type import (
-    json_content_type,
     generate_json_response,
+    json_content_type,
 )
 from recommender.db_config import DbBase, engine
 from recommender.env_config import PROD
@@ -18,9 +19,7 @@ from recommender.env_config import PROD
 def start_api(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    CORS(app,
-         origins=os.environ["FE_ORIGIN"],
-         supports_credentials=True)
+    CORS(app, origins=os.environ["FE_ORIGIN"], supports_credentials=True)
     Talisman(
         app,
         force_https=PROD,
@@ -66,15 +65,14 @@ def start_api(test_config=None):
 
     @app.errorhandler(recommender.api.utils.http_exception.HttpException)
     def handle_http_exception(
-        error: recommender.api.utils.http_exception.HttpException
+        error: recommender.api.utils.http_exception.HttpException,
     ) -> Response:
         return generate_json_response(
             data=None,
             additional_root_params={
                 "message": error.message,
-                "errorCode": None
-                if error.error_code is None
-                else error.error_code
+                "errorCode": None if error.error_code is None else error.error_code,
+                **({} if error.additional_data is None else error.additional_data),
             },
             status=error.status_code,
         )

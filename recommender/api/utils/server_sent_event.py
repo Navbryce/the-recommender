@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic
+from typing import Generic, TypeVar
 
 from recommender.utilities.json_encode_utilities import json_encode
 
-PAYLOAD_TYPE = TypeVar('PAYLOAD_TYPE')
+PAYLOAD_TYPE = TypeVar("PAYLOAD_TYPE")
 
 
 @dataclass

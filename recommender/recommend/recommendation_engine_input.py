@@ -27,16 +27,20 @@ class RecommendationEngineInput:
             recommendation.business_id for recommendation in self.maybe_recommendations
         ]
 
-
     @property
     def accepted_recommendation_ids(self):
         return [
-            recommendation.business_id for recommendation in self.accepted_recommendations
+            recommendation.business_id
+            for recommendation in self.accepted_recommendations
         ]
 
     @property
     def seen_business_ids(self):
-        return self.rejected_business_ids + self.maybe_business_ids + self.accepted_recommendation_ids
+        return (
+            self.rejected_business_ids
+            + self.maybe_business_ids
+            + self.accepted_recommendation_ids
+        )
 
     @property
     def normalized_seen_business_names(self):
@@ -44,6 +48,7 @@ class RecommendationEngineInput:
             [
                 recommendation.business_data_for_recommendation.name.lower()
                 for recommendation in self.rejected_recommendations
-                + self.maybe_recommendations + self.accepted_recommendations
+                + self.maybe_recommendations
+                + self.accepted_recommendations
             ]
         )

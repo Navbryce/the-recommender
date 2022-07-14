@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional, Callable
+from typing import Callable, Optional
 
-from sqlalchemy import String, Column, Enum, ForeignKey
-from sqlalchemy.orm import relationship, Session, Query
+from sqlalchemy import Column, Enum, ForeignKey, String
+from sqlalchemy.orm import Query, Session, relationship
 
 from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.election import Election
@@ -18,7 +18,7 @@ from recommender.db_config import DbBase
 
 
 def generate_recommendation_join_on_status(
-    status: Optional[RecommendationAction]
+    status: Optional[RecommendationAction],
 ) -> str:
     if status is None:
         status_condition = "Recommendation.status.is_(None)"
@@ -30,15 +30,25 @@ def generate_recommendation_join_on_status(
 @serializable_persistence_object
 class SearchSession(DbBase):
     @staticmethod
-    def get_session_by_id(db_session: Session,
-                          session_id: str,
-                          query_modifier: Callable[[Query], Query] = lambda x: x) -> Optional[SearchSession]:
-        return query_modifier(db_session.query(SearchSession)).filter_by(id=session_id).first()
+    def get_session_by_id(
+        db_session: Session,
+        session_id: str,
+        query_modifier: Callable[[Query], Query] = lambda x: x,
+    ) -> Optional[SearchSession]:
+        return (
+            query_modifier(db_session.query(SearchSession))
+            .filter_by(id=session_id)
+            .first()
+        )
 
     __tablename__ = "search_session"
 
     id: str = Column(String(length=36), primary_key=True)
-    session_status: SearchSessionStatus = Column(Enum(SearchSessionStatus), nullable=False, default=SearchSessionStatus.IN_PROGRESS)
+    session_status: SearchSessionStatus = Column(
+        Enum(SearchSessionStatus),
+        nullable=False,
+        default=SearchSessionStatus.IN_PROGRESS,
+    )
     search_request: BusinessSearchRequest = relationship(
         "BusinessSearchRequest", uselist=False
     )
@@ -64,33 +74,38 @@ class SearchSession(DbBase):
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.ACCEPT),
         uselist=True,
-        viewonly=True
+        viewonly=True,
     )
     current_recommendation: Optional[Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(None),
         uselist=False,
-        viewonly=True
+        viewonly=True,
     )
     maybe_recommendations: [Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.MAYBE),
-        viewonly=True
+        viewonly=True,
     )
     rejected_recommendations: [Recommendation] = relationship(
         "Recommendation",
         primaryjoin=generate_recommendation_join_on_status(RecommendationAction.REJECT),
-        viewonly=True
+        viewonly=True,
     )
 
     @property
     def current_recommendation_id(self) -> str:
-        return None if self.current_recommendation is None else self.current_recommendation.business_id
+        return (
+            None
+            if self.current_recommendation is None
+            else self.current_recommendation.business_id
+        )
 
     @property
     def accepted_recommendation_ids(self) -> [str]:
         return [
-            recommendation.business_id for recommendation in self.accepted_recommendations
+            recommendation.business_id
+            for recommendation in self.accepted_recommendations
         ]
 
     @property

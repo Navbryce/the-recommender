@@ -5,7 +5,9 @@ from typing import Final
 
 from fuzzywuzzy import fuzz
 
-from recommender.api.utils.http_exception import HttpException, ErrorCode
+from recommender.api.utils.http_exception import ErrorCode, HttpException
+from recommender.business.page import Page
+from recommender.business.search_client import SearchClient
 from recommender.data.recommendation.business_search_request import (
     BusinessSearchRequest,
 )
@@ -14,8 +16,6 @@ from recommender.data.recommendation.displayable_recommendation import (
 )
 from recommender.data.recommendation.filterable_business import RecommendableBusiness
 from recommender.data.recommendation.recommendation import Recommendation
-from recommender.business.page import Page
-from recommender.business.search_client import SearchClient
 from recommender.recommend.recommendation_engine_input import RecommendationEngineInput
 
 
@@ -82,7 +82,7 @@ class Recommender:
         if len(potential_recommendations) == 0:
             raise HttpException(
                 message="No businesses found. Try different parameters",
-                error_code=ErrorCode.NO_BUSINESSES_FOUND
+                error_code=ErrorCode.NO_BUSINESSES_FOUND,
             )
         elif len(potential_recommendations) < target_amount:
             warning(

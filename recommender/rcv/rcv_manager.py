@@ -1,3 +1,4 @@
+import json
 import random
 from datetime import datetime
 from typing import Optional
@@ -7,25 +8,33 @@ from rq.job import JobStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 
-from recommender.api.utils.http_exception import HttpException, ErrorCode
-from recommender.api.utils.server_sent_event import ServerSentEvent
+from recommender.api.utils.http_exception import ErrorCode, HttpException
 from recommender.auth.user_manager import UserManager
 from recommender.business.business_manager import BusinessManager
 from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.db_utils import is_unique_key_error
 from recommender.data.rcv.candidate import Candidate
-from recommender.data.rcv.displayable_election import DisplayableElection, DisplayableCandidate
-from recommender.data.rcv.election import Election, ACTIVE_ID_LENGTH
+from recommender.data.rcv.displayable_election import (
+    DisplayableCandidate,
+    DisplayableElection,
+)
+from recommender.data.rcv.election import ACTIVE_ID_LENGTH, Election
+from recommender.data.rcv.election_result import (
+    DisplayableElectionResult,
+    ElectionResult,
+)
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
 from recommender.db_config import DbSession
 from recommender.rcv.election_result_update_consumer import ElectionResultUpdateConsumer
 from recommender.rcv.election_update_stream import (
+    CandidateAddedEvent,
     ElectionUpdateStream,
-    ElectionUpdateEventType, CandidateAddedEvent, StatusChangedEvent,
+    StatusChangedEvent,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
+from recommender.utilities.json_encode_utilities import NoNormalizationDict
 
 
 class RCVManager:
@@ -37,9 +46,7 @@ class RCVManager:
         self.__business_manager = business_manager
         self.__user_manager = user_manager
 
-    def create_election(
-            self, user: SerializableBasicUser
-    ) -> Election:
+    def create_election(self, user: SerializableBasicUser) -> Election:
         db_session = DbSession()
         election_id = str(uuid4())
         while True:
@@ -75,14 +82,37 @@ class RCVManager:
             id=election.id,
             active_id=election.active_id,
             election_status=election.election_status,
-            candidates=[DisplayableCandidate(business_id=candidate.business_id,
-                                                name=self.__business_manager.get_displayable_business(candidate.business_id).name,
-                                             nominator_nickname=candidate.nominator.nickname)
-                           for candidate in election.candidates])
+            candidates=[
+                DisplayableCandidate(
+                    business_id=candidate.business_id,
+                    name=self.__business_manager.get_displayable_business(
+                        candidate.business_id
+                    ).name,
+                    nominator_nickname=candidate.nominator.nickname,
+                )
+                for candidate in election.candidates
+            ],
+        )
 
     def get_active_election_by_active_id(self, active_id: str) -> Election:
         db_session = DbSession()
         return Election.get_active_election_by_active_id(db_session, active_id)
+
+    def get_election_results(self, id: str) -> DisplayableElectionResult:
+        db_session = DbSession()
+        result_as_string = Election.get_election_by_id(
+            db_session, id, lambda x: x.options(load_only(Election.election_result))
+        ).election_result
+        # TODO: Deserializes string just to re-serialize it. Change it in the future
+        if result_as_string is None:
+            return None
+        results = json.loads(result_as_string)
+        # TODO: Maybe smoothe JSON decoding/encoding for database
+        return DisplayableElectionResult.from_election_result(
+            ElectionResult(
+                calculated_at=results["calculated_at"], rounds=results["rounds"]
+            )
+        )
 
     def add_candidate(self, active_id: str, business_id: str, user_id: str) -> bool:
         db_session = DbSession()
@@ -100,8 +130,9 @@ class RCVManager:
                 status_code=404,
             )
         if partial_election.election_status != ElectionStatus.IN_CREATION:
-            raise InvalidElectionStateException(
-                message=f"Cannot add a candidate to an election with status: {partial_election.election_status.value}"
+            raise InvalidElectionStatusException(
+                message=f"Cannot add a candidate to an election with current status",
+                status=partial_election.election_status,
             )
 
         # Verify business exists? Cache business
@@ -121,11 +152,17 @@ class RCVManager:
                 return False
             raise error
         # TODO: Accelerate fetching process here
-        business: DisplayableBusiness = self.__business_manager.get_displayable_business(business_id=business_id)
+        business: DisplayableBusiness = self.__business_manager.get_displayable_business(
+            business_id=business_id
+        )
         # TODO: Maybe just pass the name stored within the cookie instead of refetching from the database
         nickname = self.__user_manager.get_nickname_by_user_id(user_id)
         ElectionUpdateStream.for_election(partial_election.id).publish_message(
-           CandidateAddedEvent(business_id=business_id, name=business.name, nominator_nickname=nickname if nickname is not None else "Unknown")
+            CandidateAddedEvent(
+                business_id=business_id,
+                name=business.name,
+                nominator_nickname=nickname if nickname is not None else "Unknown",
+            )
         )
         return True
 
@@ -148,8 +185,9 @@ class RCVManager:
         if partial_election.election_status == ElectionStatus.VOTING:
             return
         if partial_election.election_status != ElectionStatus.IN_CREATION:
-            raise InvalidElectionStateException(
-                message=f"Cannot move an election to status {ElectionStatus.VOTING.name} when status is {partial_election.election_status.value}"
+            raise InvalidElectionStatusException(
+                message=f"Cannot move an election to status {ElectionStatus.VOTING.name} with current status",
+                status=partial_election.status,
             )
 
         # TODO: validate change made by using WHERE
@@ -160,11 +198,11 @@ class RCVManager:
         )
 
     def mark_election_as_complete(
-            self, election_id: str, complete_reason: ElectionStatus
+        self, election_id: str, complete_reason: ElectionStatus
     ):
         if (
-                complete_reason != ElectionStatus.MANUALLY_COMPLETE
-                or complete_reason != ElectionStatus.MARKED_COMPLETE
+            complete_reason != ElectionStatus.MANUALLY_COMPLETE
+            or complete_reason != ElectionStatus.MARKED_COMPLETE
         ):
             raise ValueError(f"Invalid complete reason: {complete_reason.value}")
 
@@ -181,8 +219,9 @@ class RCVManager:
             return
 
         if partial_election.election_status != ElectionStatus.VOTING:
-            raise InvalidElectionStateException(
-                message=f"Cannot move an election to complete with status: {partial_election.election_status.value}"
+            raise InvalidElectionStatusException(
+                message=f"Cannot move an election to complete with current status",
+                status=partial_election.election_status,
             )
         partial_election.election_status = complete_reason
         partial_election.election_completed_at = datetime.now()
@@ -192,7 +231,7 @@ class RCVManager:
         )
 
     def __push_election_status_change_to_update_stream(
-            self, election_id: str, new_status: ElectionStatus
+        self, election_id: str, new_status: ElectionStatus
     ):
         ElectionUpdateStream.for_election(election_id).publish_message(
             StatusChangedEvent(new_status)
@@ -229,8 +268,9 @@ class RCVManager:
             )
 
         if partial_election.election_status != ElectionStatus.VOTING:
-            raise InvalidElectionStateException(
-                f"Cannot vote unless election is in voting status. Current status: {partial_election.election_status.name}"
+            raise InvalidElectionStatusException(
+                f"Cannot vote unless election is in voting status with current status",
+                status=partial_election.election_status,
             )
 
         candidate_ids = set(
@@ -274,10 +314,11 @@ class RCVManager:
         election basis
         """
         fetch_result = rcv_vote_queue.fetch_job(election.id)
+        # TODO: Watch for stalled jobs
         if (
-                fetch_result is None
-                or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
-                or fetch_result.get_status(refresh=False) == JobStatus.FAILED
+            fetch_result is None
+            or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
+            or fetch_result.get_status(refresh=False) == JobStatus.FAILED
         ):
             rcv_vote_queue.enqueue(
                 self.__election_result_update_consumer.consume,
@@ -288,10 +329,10 @@ class RCVManager:
     def get_election_update_stream(self, election_id: str) -> ElectionUpdateStream:
         db_session = DbSession()
         if (
-                Election.get_election_by_id(
-                    db_session, election_id, lambda x: x.options(load_only(Election.id))
-                )
-                is None
+            Election.get_election_by_id(
+                db_session, election_id, lambda x: x.options(load_only(Election.id))
+            )
+            is None
         ):
             raise HttpException(
                 message=f"Election with id: {election_id} not found", status_code=404
@@ -300,9 +341,12 @@ class RCVManager:
         return ElectionUpdateStream.for_election(election_id)
 
 
-class InvalidElectionStateException(HttpException):
-    def __init__(self, message):
-        super(InvalidElectionStateException, self).__init__(
+class InvalidElectionStatusException(HttpException):
+    def __init__(
+        self, message: str, status: ElectionStatus, election_id: Optional[str]
+    ):
+        super(InvalidElectionStatusException, self).__init__(
             message=message,
             error_code=ErrorCode.INVALID_ELECTION_STATUS,
+            additional_data={"status": status, "election_id": election_id},
         )

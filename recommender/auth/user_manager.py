@@ -6,8 +6,8 @@ from sqlalchemy.orm import load_only
 
 from recommender.data.auth.user import (
     BasicUser,
-    SerializableFullUser,
     SerializableBasicUser,
+    SerializableFullUser,
 )
 from recommender.db_config import DbSession
 
@@ -28,7 +28,9 @@ class UserManager:
 
         return user
 
-    def authenticate_user(self, email: str, password: str) -> Optional[SerializableBasicUser]:
+    def authenticate_user(
+        self, email: str, password: str
+    ) -> Optional[SerializableBasicUser]:
         # Hard code in admin account
         if email == os.environ["ADMIN_EMAIL"] and password == os.environ["ADMIN_PASS"]:
             return SerializableFullUser(
@@ -45,5 +47,6 @@ class UserManager:
         if id == "Admin":
             return "Admin"
         else:
-            return BasicUser.get_user_by_id(DbSession(), id, lambda x: x.options(load_only(BasicUser.nickname))).nickname
-
+            return BasicUser.get_user_by_id(
+                DbSession(), id, lambda x: x.options(load_only(BasicUser.nickname))
+            ).nickname

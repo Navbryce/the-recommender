@@ -1,21 +1,38 @@
 import json
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Union, List
+from typing import Dict, Generic, List, TypeVar, Union
 
 
-def json_encode(data: any) -> str:
-    return json.dumps(to_serializable_dict(data))
+def json_encode(data: any, normalize_keys=True) -> str:
+    return json.dumps(to_serializable_dict(data, normalize_keys))
 
 
-def to_serializable_dict(data: any, normalize_keys=True) -> Union[List[any], Dict[str, any]]:
+KEY_TYPE = TypeVar("KEY_TYPE")
+DATA_TYPE = TypeVar("DATA_TYPE")
+
+# TODO: Switch from opt-out normalization to opt-in normalization
+class NoNormalizationDict(Generic[KEY_TYPE, DATA_TYPE], Dict[KEY_TYPE, DATA_TYPE]):
+    def __init__(self, *args, **kwargs):
+        super(NoNormalizationDict, self).__init__(*args, **kwargs)
+
+
+def to_serializable_dict(
+    data: any, normalize_keys=True
+) -> Union[List[any], Dict[str, any]]:
+    local_normalize_keys = True
+
     if __is_directly_serializable(data):
         raise ValueError("Should only be instances of objects")
 
     if isinstance(data, list):
-        return [__convert_value_to_serializable(value) for value in data]
+        return [
+            __convert_value_to_serializable(value, normalize_keys) for value in data
+        ]
 
     if isinstance(data, dict):
+        if isinstance(data, NoNormalizationDict):
+            local_normalize_keys = False
         data_dict = data
     else:
         data_dict = (
@@ -23,7 +40,9 @@ def to_serializable_dict(data: any, normalize_keys=True) -> Union[List[any], Dic
         )
 
     return {
-        __to_camel_case(key) if normalize_keys else key: __convert_value_to_serializable(value)
+        __to_camel_case(key)
+        if normalize_keys and local_normalize_keys
+        else key: __convert_value_to_serializable(value, normalize_keys)
         for key, value in data_dict.items()
     }
 
@@ -33,14 +52,14 @@ def __to_camel_case(value: str) -> str:
     return pascal[0].lower() + pascal[1:]
 
 
-def __convert_value_to_serializable(value):
+def __convert_value_to_serializable(value, normalize_keys):
     if __is_directly_serializable(value):
         return value
     if isinstance(value, Enum):
         return value.name
     if isinstance(value, datetime):
         return str(value)
-    return to_serializable_dict(value)
+    return to_serializable_dict(value, normalize_keys)
 
 
 __DIRECTLY_SERIALIZABLE = [str, bool, int, float]

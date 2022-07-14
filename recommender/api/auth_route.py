@@ -1,9 +1,12 @@
 from typing import Optional
 
-from flask import Blueprint, Response, request, render_template
+from flask import Blueprint, Response, render_template, request
 
-from recommender.api.global_services import user_manager, auth_route_utils
-from recommender.api.utils.json_content_type import generate_data_json_response, json_content_type
+from recommender.api.global_services import auth_route_utils, user_manager
+from recommender.api.utils.json_content_type import (
+    generate_data_json_response,
+    json_content_type,
+)
 from recommender.data.auth.user import BasicUser, SerializableBasicUser
 
 auth = Blueprint("auth", __name__)
@@ -43,5 +46,7 @@ def login() -> Response:
 @auth.route("session", methods=["GET"])
 @json_content_type()
 @auth_route_utils.get_user_route
-def get_current_session(user_maybe: Optional[SerializableBasicUser]) -> Optional[SerializableBasicUser]:
+def get_current_session(
+    user_maybe: Optional[SerializableBasicUser],
+) -> Optional[SerializableBasicUser]:
     return user_maybe

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from recommender.data.rcv.election_status import ElectionStatus
@@ -17,5 +18,3 @@ class DisplayableCandidate:
     business_id: str
     name: str
     nominator_nickname: str
-
-

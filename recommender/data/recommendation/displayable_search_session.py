@@ -18,5 +18,7 @@ class DisplayableSearchSession:
     maybe_recommendations: [DisplayableRecommendation]
     rejected_recommendations: [DisplayableRecommendation]
     session_status: SearchSessionStatus
-    accepted_recommendations: Optional[DisplayableRecommendation] = field(default_factory=list)
+    accepted_recommendations: Optional[DisplayableRecommendation] = field(
+        default_factory=list
+    )
     current_recommendation: Optional[DisplayableRecommendation] = None
