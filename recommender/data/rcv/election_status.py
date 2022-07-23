@@ -5,5 +5,4 @@ from enum import Enum, unique
 class ElectionStatus(Enum):
     IN_CREATION = "CREATION"
     VOTING = "VOTING"
-    MARKED_COMPLETE = "MARKED_COMPLETE"
-    MANUALLY_COMPLETE = "COMPLETE"
+    COMPLETE = "COMPLETE"

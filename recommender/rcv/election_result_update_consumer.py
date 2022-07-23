@@ -37,7 +37,7 @@ class ElectionResultUpdateConsumer:
         Election.update_election_by_id(
             db_session,
             election_id,
-            {"election_result": json_encode(result, normalize_keys=False)},
+            {"election_result": result},
         )
         db_session.commit()
         ElectionUpdateStream.for_election(election_id).publish_message(

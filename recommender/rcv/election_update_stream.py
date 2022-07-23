@@ -6,9 +6,7 @@ from typing import Dict, Final, Union
 
 from recommender.api.utils.server_sent_event import ServerSentEvent
 from recommender.data.rcv.election_result import (
-    CandidateRoundResult,
     DisplayableElectionResult,
-    ElectionResult,
 )
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.utilities.notification_queue import MessageStream
@@ -17,7 +15,17 @@ from recommender.utilities.notification_queue import MessageStream
 class ElectionUpdateEventType(Enum):
     STATUS_CHANGED = "STATUS_CHANGED"
     CANDIDATE_ADDED = "CANDIDATE_ADDED"
+    VOTE_CAST = "VOTE_CAST"
     RESULTS_UPDATED = "RESULTS_UPDATED"
+
+
+class StatusChangedEvent(ServerSentEvent[Dict]):
+    def __init__(self, status: ElectionStatus):
+        super(StatusChangedEvent, self).__init__(
+            id=f"{ElectionUpdateEventType.STATUS_CHANGED.value}-{status.value}",
+            type=ElectionUpdateEventType.STATUS_CHANGED.value,
+            data={"status": status.value},
+        )
 
 
 class CandidateAddedEvent(ServerSentEvent[Dict]):
@@ -32,13 +40,15 @@ class CandidateAddedEvent(ServerSentEvent[Dict]):
             },
         )
 
-
-class StatusChangedEvent(ServerSentEvent[Dict]):
-    def __init__(self, status: ElectionStatus):
-        super(StatusChangedEvent, self).__init__(
-            id=f"{ElectionUpdateEventType.STATUS_CHANGED.value}-{status.value}",
-            type=ElectionUpdateEventType.STATUS_CHANGED.value,
-            data={"status": status.value},
+class VoteCastEvent(ServerSentEvent[Dict]):
+    def __init__(self, user_id: str, nickname: str):
+        super(VoteCastEvent, self).__init__(
+            id=f"{ElectionUpdateEventType.VOTE_CAST.value}-{user_id}",
+            type=ElectionUpdateEventType.VOTE_CAST.value,
+            data={
+                "user_id": user_id,
+                "nickname": nickname,
+            },
         )
 
 

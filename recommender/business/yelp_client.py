@@ -84,8 +84,6 @@ class YelpClient(SearchClient):
                 for priceCategory in search_params.price_categories
             ]
         )
-        category_filter = YelpClient.array_to_search_string(search_params.categories)
-        attributes_filter = YelpClient.array_to_search_string(search_params.attributes)
         result = self.yelp_graph_api_client.execute(
             BUSINESS_SEARCH_QUERY,
             {

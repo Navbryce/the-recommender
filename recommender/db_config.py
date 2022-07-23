@@ -12,7 +12,6 @@ engine = create_engine(
     "sqlite:///recommendation.db", connect_args={"check_same_thread": False}
 )
 if not PROD:
-
     @event.listens_for(engine, "connect")
     def activate_foreign_keys(connection, record):
         connection.execute("pragma foreign_keys=ON")

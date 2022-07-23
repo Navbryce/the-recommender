@@ -31,7 +31,7 @@ from recommender.rcv.election_result_update_consumer import ElectionResultUpdate
 from recommender.rcv.election_update_stream import (
     CandidateAddedEvent,
     ElectionUpdateStream,
-    StatusChangedEvent,
+    StatusChangedEvent, VoteCastEvent,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
 from recommender.utilities.json_encode_utilities import NoNormalizationDict
@@ -98,19 +98,16 @@ class RCVManager:
         db_session = DbSession()
         return Election.get_active_election_by_active_id(db_session, active_id)
 
-    def get_election_results(self, id: str) -> DisplayableElectionResult:
+    def get_election_results(self, id: str) -> Optional[DisplayableElectionResult]:
         db_session = DbSession()
-        result_as_string = Election.get_election_by_id(
+        results = Election.get_election_by_id(
             db_session, id, lambda x: x.options(load_only(Election.election_result))
         ).election_result
-        # TODO: Deserializes string just to re-serialize it. Change it in the future
-        if result_as_string is None:
+        if results is None:
             return None
-        results = json.loads(result_as_string)
-        # TODO: Maybe smoothe JSON decoding/encoding for database
         return DisplayableElectionResult.from_election_result(
             ElectionResult(
-                calculated_at=results["calculated_at"], rounds=results["rounds"]
+                calculated_at=results.calculated_at, rounds=results.rounds
             )
         )
 
@@ -183,12 +180,21 @@ class RCVManager:
         # TODO: Refactor election status "is already status" check (not changing) for both move_election_to_voting and
         #  mark_as_complete into one function that fetches the partial electoin
         if partial_election.election_status == ElectionStatus.VOTING:
+            # do nothing if already in voting status voting
             return
         if partial_election.election_status != ElectionStatus.IN_CREATION:
             raise InvalidElectionStatusException(
-                message=f"Cannot move an election to status {ElectionStatus.VOTING.name} with current status",
+                election_id=election_id,
                 status=partial_election.status,
+                message=f"Cannot move an election to status {ElectionStatus.VOTING.name} with current status",
             )
+
+        if Election.get_number_of_candidates(db_session, election_id) == 0:
+            raise InvalidElectionStatusException(
+                election_id=election_id,
+                status=partial_election.election_status,
+                message=f"Cannot move election to status {ElectionStatus.VOTING.name} "
+                        f"when no candidates have been nominated")
 
         # TODO: validate change made by using WHERE
         partial_election.election_status = ElectionStatus.VOTING
@@ -198,14 +204,8 @@ class RCVManager:
         )
 
     def mark_election_as_complete(
-        self, election_id: str, complete_reason: ElectionStatus
+            self, election_id: str
     ):
-        if (
-            complete_reason != ElectionStatus.MANUALLY_COMPLETE
-            or complete_reason != ElectionStatus.MARKED_COMPLETE
-        ):
-            raise ValueError(f"Invalid complete reason: {complete_reason.value}")
-
         db_session = DbSession()
         # could lead to race conditions, but exact completed_at not support important
         partial_election = Election.get_election_by_id(
@@ -215,7 +215,7 @@ class RCVManager:
                 load_only(Election.id, Election.election_status)
             ),
         )
-        if partial_election == complete_reason:
+        if partial_election.election_status == ElectionStatus.COMPLETE:
             return
 
         if partial_election.election_status != ElectionStatus.VOTING:
@@ -223,15 +223,13 @@ class RCVManager:
                 message=f"Cannot move an election to complete with current status",
                 status=partial_election.election_status,
             )
-        partial_election.election_status = complete_reason
+        partial_election.election_status = ElectionStatus.COMPLETE
         partial_election.election_completed_at = datetime.now()
         db_session.commit()
-        self.__push_election_status_change_to_update_stream(
-            election_id, complete_reason
-        )
+        self.__queue_election_for_result_update(election=partial_election)
 
     def __push_election_status_change_to_update_stream(
-        self, election_id: str, new_status: ElectionStatus
+            self, election_id: str, new_status: ElectionStatus
     ):
         ElectionUpdateStream.for_election(election_id).publish_message(
             StatusChangedEvent(new_status)
@@ -299,13 +297,21 @@ class RCVManager:
             )
             for index, business_id in enumerate(votes)
         ]
-        Ranking.delete_users_rankings_for_election(
+        already_voted = Ranking.delete_users_rankings_for_election(
             db_session, user_id=user_id, election_id=election_id
-        )
+        ) > 0
         db_session.add_all(rankings)
         db_session.commit()
 
-        self.__queue_election_for_result_update(election=partial_election)
+        if not already_voted:
+            # TODO: Maybe pass nickname from cookie instead of re-fetching after vote
+            nickname = self.__user_manager.get_nickname_by_user_id(user_id)
+            ElectionUpdateStream.for_election(election_id).publish_message(
+                VoteCastEvent(
+                    user_id=user_id,
+                    nickname=nickname if nickname is not None else "Unknown"
+                )
+            )
 
     def __queue_election_for_result_update(self, election: Election):
         """
@@ -316,9 +322,9 @@ class RCVManager:
         fetch_result = rcv_vote_queue.fetch_job(election.id)
         # TODO: Watch for stalled jobs
         if (
-            fetch_result is None
-            or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
-            or fetch_result.get_status(refresh=False) == JobStatus.FAILED
+                fetch_result is None
+                or fetch_result.get_status(refresh=False) == JobStatus.FINISHED
+                or fetch_result.get_status(refresh=False) == JobStatus.FAILED
         ):
             rcv_vote_queue.enqueue(
                 self.__election_result_update_consumer.consume,
@@ -327,12 +333,18 @@ class RCVManager:
             )
 
     def get_election_update_stream(self, election_id: str) -> ElectionUpdateStream:
+        """
+        checks election existence.
+
+        :param election_id:
+        :return: if the election exists, returns the ElectionUpdateStream
+        """
         db_session = DbSession()
         if (
-            Election.get_election_by_id(
-                db_session, election_id, lambda x: x.options(load_only(Election.id))
-            )
-            is None
+                Election.get_election_by_id(
+                    db_session, election_id, lambda x: x.options(load_only(Election.id))
+                )
+                is None
         ):
             raise HttpException(
                 message=f"Election with id: {election_id} not found", status_code=404
@@ -343,7 +355,7 @@ class RCVManager:
 
 class InvalidElectionStatusException(HttpException):
     def __init__(
-        self, message: str, status: ElectionStatus, election_id: Optional[str]
+            self, message: str, status: ElectionStatus, election_id: Optional[str] = None
     ):
         super(InvalidElectionStatusException, self).__init__(
             message=message,

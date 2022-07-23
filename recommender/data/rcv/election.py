@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Callable, Dict, List, Optional
 
-from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Index, String, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, func, PickleType
 from sqlalchemy.orm import Query, Session, aliased, relationship
 
 from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.candidate import Candidate
+from recommender.data.rcv.election_result import ElectionResult
 from recommender.data.rcv.election_status import ElectionStatus
 from recommender.data.rcv.ranking import Ranking
 from recommender.data.serializable import serializable_persistence_object
@@ -25,6 +26,10 @@ class Election(DbBase):
         query_modifier: Callable[[Query], Query] = lambda x: x,
     ) -> Optional[Election]:
         return query_modifier(db_session.query(Election)).filter_by(id=id).first()
+
+    @staticmethod
+    def get_number_of_candidates(db_session: Session, id: str) -> int:
+        return db_session.query(Candidate).filter_by(election_id=id).count()
 
     @staticmethod
     def update_election_by_id(db_session: Session, id: str, values: Dict[str, any]):
@@ -83,7 +88,7 @@ class Election(DbBase):
     election_creator_id: str = Column(
         String(length=36), ForeignKey(BasicUser.id), nullable=False
     )
-    election_result: str = Column("election_result", JSON)
+    election_result: Optional[ElectionResult] = Column("election_result", PickleType)
 
     election_creator = relationship("BasicUser", uselist=False)
     candidates: List[Candidate] = relationship("Candidate")

@@ -3,13 +3,15 @@ import os
 from dotenv import load_dotenv
 from rq import Connection, Queue
 
+from recommender.env_config import HEROKU
+
 load_dotenv(verbose=True)
 
 from recommender.db_config import primary_redis_conn
 
 
 # import correct worker
-if os.environ["IS_HEROKU"]:
+if HEROKU:
     from rq.worker import HerokuWorker as Worker
 else:
     from rq.worker import Worker

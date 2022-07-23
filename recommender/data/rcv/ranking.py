@@ -17,8 +17,8 @@ class Ranking(DbBase):
     @staticmethod
     def delete_users_rankings_for_election(
         db_session: Session, user_id: str, election_id: str
-    ):
-        db_session.query(Ranking).filter_by(
+    ) -> int:
+        return db_session.query(Ranking).filter_by(
             user_id=user_id, election_id=election_id
         ).delete()
 

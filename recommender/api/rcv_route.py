@@ -85,15 +85,15 @@ def update_election_state(user: SerializableBasicUser, election_id: str) -> Resp
     new_state = request.json["state"]
     if (
         new_state != ElectionStatus.VOTING.value
-        and new_state != ElectionStatus.MANUALLY_COMPLETE.value
+        and new_state != ElectionStatus.COMPLETE.value
     ):
         raise ValueError(f"Invalid input state: {new_state}")
 
     if new_state == ElectionStatus.VOTING.value:
         rcv_manager.move_election_to_voting(election_id)
-    elif new_state == ElectionStatus.MANUALLY_COMPLETE.value:
+    elif new_state == ElectionStatus.COMPLETE.value:
         rcv_manager.mark_election_as_complete(
-            election_id, ElectionStatus.MANUALLY_COMPLETE
+            election_id
         )
     return Response(status=200)
 
