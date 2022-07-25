@@ -1,4 +1,3 @@
-import json
 import random
 from datetime import datetime
 from typing import Optional
@@ -11,6 +10,7 @@ from sqlalchemy.orm import load_only
 from recommender.api.utils.http_exception import ErrorCode, HttpException
 from recommender.auth.user_manager import UserManager
 from recommender.business.business_manager import BusinessManager
+from recommender.data.auth.displayable_user import DisplayableUser
 from recommender.data.auth.user import SerializableBasicUser
 from recommender.data.business.displayable_business import DisplayableBusiness
 from recommender.data.db_utils import is_unique_key_error
@@ -34,7 +34,6 @@ from recommender.rcv.election_update_stream import (
     StatusChangedEvent, VoteCastEvent,
 )
 from recommender.rcv.rcv_queue_config import rcv_vote_queue
-from recommender.utilities.json_encode_utilities import NoNormalizationDict
 
 
 class RCVManager:
@@ -46,8 +45,7 @@ class RCVManager:
         self.__business_manager = business_manager
         self.__user_manager = user_manager
 
-    def create_election(self, user: SerializableBasicUser) -> Election:
-        db_session = DbSession()
+    def create_election(self, db_session: DbSession, user: SerializableBasicUser) -> Election:
         election_id = str(uuid4())
         while True:
             try:
@@ -73,11 +71,17 @@ class RCVManager:
             ]
         )
 
-    def get_displayable_election_by_id(self, id: str) -> Optional[DisplayableElection]:
-        db_session = DbSession()
+    def get_displayable_election_by_id(self, db_session: DbSession, id: str, with_voters=False) -> Optional[
+        DisplayableElection]:
+
         election = Election.get_election_by_id(db_session=db_session, id=id)
         if election is None:
             return None
+
+        optional_props = {}
+        if with_voters:
+            optional_props["voters"] = [DisplayableUser.from_user(user) for user in election.voters]
+
         return DisplayableElection(
             id=election.id,
             active_id=election.active_id,
@@ -92,14 +96,13 @@ class RCVManager:
                 )
                 for candidate in election.candidates
             ],
+            **optional_props
         )
 
-    def get_active_election_by_active_id(self, active_id: str) -> Election:
-        db_session = DbSession()
+    def get_active_election_by_active_id(self, db_session: DbSession, active_id: str) -> Election:
         return Election.get_active_election_by_active_id(db_session, active_id)
 
-    def get_election_results(self, id: str) -> Optional[DisplayableElectionResult]:
-        db_session = DbSession()
+    def get_election_results(self, db_session: DbSession, id: str) -> Optional[DisplayableElectionResult]:
         results = Election.get_election_by_id(
             db_session, id, lambda x: x.options(load_only(Election.election_result))
         ).election_result
@@ -111,9 +114,7 @@ class RCVManager:
             )
         )
 
-    def add_candidate(self, active_id: str, business_id: str, user_id: str) -> bool:
-        db_session = DbSession()
-
+    def add_candidate(self, db_session: DbSession, active_id: str, business_id: str, user_id: str) -> bool:
         partial_election = Election.get_active_election_by_active_id(
             db_session=db_session,
             active_id=active_id,
@@ -153,7 +154,7 @@ class RCVManager:
             business_id=business_id
         )
         # TODO: Maybe just pass the name stored within the cookie instead of refetching from the database
-        nickname = self.__user_manager.get_nickname_by_user_id(user_id)
+        nickname = self.__user_manager.get_nickname_by_user_id(db_session, user_id)
         ElectionUpdateStream.for_election(partial_election.id).publish_message(
             CandidateAddedEvent(
                 business_id=business_id,
@@ -163,8 +164,7 @@ class RCVManager:
         )
         return True
 
-    def move_election_to_voting(self, election_id: str):
-        db_session = DbSession()
+    def move_election_to_voting(self, db_session: DbSession, election_id: str):
         partial_election = Election.get_election_by_id(
             db_session,
             election_id,
@@ -204,9 +204,8 @@ class RCVManager:
         )
 
     def mark_election_as_complete(
-            self, election_id: str
+            self, db_session: DbSession, election_id: str
     ):
-        db_session = DbSession()
         # could lead to race conditions, but exact completed_at not support important
         partial_election = Election.get_election_by_id(
             db_session,
@@ -227,6 +226,7 @@ class RCVManager:
         partial_election.election_completed_at = datetime.now()
         db_session.commit()
         self.__queue_election_for_result_update(election=partial_election)
+        self.__push_election_status_change_to_update_stream(election_id, ElectionStatus.COMPLETE)
 
     def __push_election_status_change_to_update_stream(
             self, election_id: str, new_status: ElectionStatus
@@ -235,8 +235,7 @@ class RCVManager:
             StatusChangedEvent(new_status)
         )
 
-    def get_candidates(self, active_id: str) -> [Candidate]:
-        db_session = DbSession()
+    def get_candidates(self, db_session: DbSession, active_id: str) -> [Candidate]:
         partial_election = Election.get_active_election_by_active_id(
             db_session,
             active_id,
@@ -250,8 +249,7 @@ class RCVManager:
             )
         return partial_election.candidates
 
-    def vote(self, user_id: str, election_id: str, votes: [str]):
-        db_session = DbSession()
+    def vote(self, db_session: DbSession, user_id: str, election_id: str, votes: [str]):
         partial_election = Election.get_election_by_id(
             db_session,
             election_id,
@@ -305,7 +303,7 @@ class RCVManager:
 
         if not already_voted:
             # TODO: Maybe pass nickname from cookie instead of re-fetching after vote
-            nickname = self.__user_manager.get_nickname_by_user_id(user_id)
+            nickname = self.__user_manager.get_nickname_by_user_id(db_session, user_id)
             ElectionUpdateStream.for_election(election_id).publish_message(
                 VoteCastEvent(
                     user_id=user_id,
@@ -332,14 +330,14 @@ class RCVManager:
                 job_id=election.id,
             )
 
-    def get_election_update_stream(self, election_id: str) -> ElectionUpdateStream:
+    def get_election_update_stream(self, db_session: DbSession, election_id: str) -> ElectionUpdateStream:
         """
         checks election existence.
 
+        :param db_session: database session to use
         :param election_id:
         :return: if the election exists, returns the ElectionUpdateStream
         """
-        db_session = DbSession()
         if (
                 Election.get_election_by_id(
                     db_session, election_id, lambda x: x.options(load_only(Election.id))

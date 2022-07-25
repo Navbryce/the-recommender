@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from operator import and_
 from typing import Callable, Dict, List, Optional
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, func, PickleType
-from sqlalchemy.orm import Query, Session, aliased, relationship
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, func, PickleType, select
+from sqlalchemy.orm import Query, Session, aliased, relationship, object_session
 
 from recommender.data.auth.user import BasicUser
 from recommender.data.rcv.candidate import Candidate
@@ -21,9 +22,9 @@ ACTIVE_ID_LENGTH = 6
 class Election(DbBase):
     @staticmethod
     def get_election_by_id(
-        db_session: Session,
-        id: str,
-        query_modifier: Callable[[Query], Query] = lambda x: x,
+            db_session: Session,
+            id: str,
+            query_modifier: Callable[[Query], Query] = lambda x: x,
     ) -> Optional[Election]:
         return query_modifier(db_session.query(Election)).filter_by(id=id).first()
 
@@ -39,37 +40,37 @@ class Election(DbBase):
 
     @staticmethod
     def get_active_election_by_active_id(
-        db_session: Session,
-        active_id: str,
-        query_modifier: Callable[[Query], Query] = lambda x: x,
+            db_session: Session,
+            active_id: str,
+            query_modifier: Callable[[Query], Query] = lambda x: x,
     ) -> Optional[Election]:
         return (
             query_modifier(db_session.query(Election))
-            .filter_by(active_id=active_id, election_completed_at=None)
-            .first()
+                .filter_by(active_id=active_id, election_completed_at=None)
+                .first()
         )
 
     @staticmethod
     def get_rankings_by_user_for_election(
-        db_session: Session, election_id: str
+            db_session: Session, election_id: str
     ) -> Dict[str, List[str]]:
         aliased_ranking_table = aliased(Ranking, name="aliased_ranking")
 
         user_rankings = (
             db_session.query(func.group_concat(aliased_ranking_table.business_id))
-            .filter(
+                .filter(
                 aliased_ranking_table.user_id == Ranking.user_id,
                 aliased_ranking_table.election_id == election_id,
             )
-            .order_by(aliased_ranking_table.rank.asc())
-            .correlate(Ranking)
-            .as_scalar()
+                .order_by(aliased_ranking_table.rank.asc())
+                .correlate(Ranking)
+                .as_scalar()
         )
         rankings_for_election = (
             db_session.query(Ranking.user_id, user_rankings)
-            .filter(Ranking.election_id == election_id)
-            .group_by(Ranking.user_id)
-            .all()
+                .filter(Ranking.election_id == election_id)
+                .group_by(Ranking.user_id)
+                .all()
         )
 
         return {
@@ -92,5 +93,13 @@ class Election(DbBase):
 
     election_creator = relationship("BasicUser", uselist=False)
     candidates: List[Candidate] = relationship("Candidate")
+
+    @property
+    def voters(self) -> [BasicUser]:
+        return [row[0] for row in object_session(self).execute(
+            select(BasicUser). \
+                where(and_(Ranking.election_id == self.id, BasicUser.id == Ranking.user_id)).
+                distinct()
+        ).all()]
 
     __table_args__ = (Index("active_id", active_id, election_completed_at),)

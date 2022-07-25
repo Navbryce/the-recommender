@@ -31,7 +31,7 @@ class SessionManager:
     __rcv_manager: Final[RCVManager]
 
     def __init__(
-        self, recommendation_manager: RecommendationManager, rcv_manager: RCVManager
+            self, recommendation_manager: RecommendationManager, rcv_manager: RCVManager
     ) -> None:
         # init tables (after everything has been imported by the services)
         self.__recommendation_manager = recommendation_manager
@@ -44,8 +44,7 @@ class SessionManager:
         "rejected_recommendations",
     ]
 
-    def get_displayable_session(self, session_id: str) -> DisplayableSearchSession:
-        db_session = DbSession()
+    def get_displayable_session(self, db_session: DbSession, session_id: str) -> DisplayableSearchSession:
         search_session = SearchSession.get_session_by_id(db_session, session_id)
         # parallelize
         displayable_recommendations_dict = {}
@@ -81,16 +80,18 @@ class SessionManager:
         )
 
     def new_session(
-        self,
-        search_request: BusinessSearchRequest,
-        dinner_party_active_id: Optional[str],
-        user_maybe: Optional[SerializableBasicUser],
+            self,
+            db_session: DbSession,
+            search_request: BusinessSearchRequest,
+            dinner_party_active_id: Optional[str],
+            user_maybe: Optional[SerializableBasicUser],
     ) -> SearchSession:
         session_id = str(uuid4())
 
         dinner_party_id = None
         if dinner_party_active_id is not None:
             dinner_party = self.__rcv_manager.get_active_election_by_active_id(
+                db_session,
                 dinner_party_active_id
             )
             if dinner_party is None:
@@ -113,18 +114,17 @@ class SessionManager:
             dinner_party_id=dinner_party_id,
             created_by_id=None if user_maybe is None else user_maybe.id,
         )
-        db_session = DbSession()
         db_session.add(new_session)
         db_session.commit()
         return new_session
 
     def apply_recommendation_action_to_current(
-        self,
-        session_id: str,
-        current_recommendation_id: str,
-        recommendation_action: RecommendationAction,
+            self,
+            db_session: DbSession,
+            session_id: str,
+            current_recommendation_id: str,
+            recommendation_action: RecommendationAction,
     ):
-        db_session = DbSession()
         current_session: SearchSession = SearchSession.get_session_by_id(
             db_session, session_id
         )
@@ -155,6 +155,7 @@ class SessionManager:
             db_session.commit()  # complete transaction so rcv_manager can add candidate for SqlLite
             if current_session.is_dinner_party:
                 self.__rcv_manager.add_candidate(
+                    db_session=db_session,
                     active_id=current_session.dinner_party.active_id,
                     business_id=current_recommendation_id,
                     user_id=current_session.created_by_id,
@@ -168,9 +169,8 @@ class SessionManager:
         current_session.current_recommendation = None
 
     def get_next_recommendation_for_session(
-        self, session_id: str
+            self, db_session: DbSession, session_id: str
     ) -> DisplayableRecommendation:
-        db_session = DbSession()
         search_session: SearchSession = SearchSession.get_session_by_id(
             db_session, session_id
         )
@@ -192,12 +192,12 @@ class SessionManager:
         )
 
     def apply_action_to_maybe(
-        self,
-        session_id: str,
-        recommendation_id: str,
-        recommendation_action: RecommendationAction,
+            self,
+            db_session: DbSession,
+            session_id: str,
+            recommendation_id: str,
+            recommendation_action: RecommendationAction,
     ):
-        db_session = DbSession()
         current_session: SearchSession = SearchSession.get_session_by_id(
             db_session, session_id
         )

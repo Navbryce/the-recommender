@@ -11,6 +11,7 @@ def json_encode(data: any, normalize_keys=True) -> str:
 KEY_TYPE = TypeVar("KEY_TYPE")
 DATA_TYPE = TypeVar("DATA_TYPE")
 
+
 # TODO: Switch from opt-out normalization to opt-in normalization
 class NoNormalizationDict(Generic[KEY_TYPE, DATA_TYPE], Dict[KEY_TYPE, DATA_TYPE]):
     def __init__(self, *args, **kwargs):
@@ -18,7 +19,7 @@ class NoNormalizationDict(Generic[KEY_TYPE, DATA_TYPE], Dict[KEY_TYPE, DATA_TYPE
 
 
 def to_serializable_dict(
-    data: any, normalize_keys=True
+        data: any, normalize_keys=True
 ) -> Union[List[any], Dict[str, any]]:
     local_normalize_keys = True
 
@@ -48,7 +49,8 @@ def to_serializable_dict(
 
 
 def __to_camel_case(value: str) -> str:
-    pascal = "".join([value[0].upper() + value[1:] for value in value.split("_")])
+    pascal = "".join([value if len(value) <= 1 else value[0].upper() + value[1:]
+                      for value in value.split("_")])
     return pascal[0].lower() + pascal[1:]
 
 

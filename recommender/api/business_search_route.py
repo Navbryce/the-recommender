@@ -41,7 +41,7 @@ session_manager: SessionManager = SessionManager(recommendation_manager, rcv_man
 @json_content_type()
 @auth_route_utils.get_user_route
 def new_search_session(
-    user_maybe: Optional[SerializableBasicUser],
+        user_maybe: Optional[SerializableBasicUser],
 ) -> SessionCreationResponse:
     search_request = BusinessSearchRequest.from_dict(
         request.json["businessSearchParameters"]
@@ -51,81 +51,96 @@ def new_search_session(
     if dinner_party_active_id is not None and user_maybe is None:
         # a user must be logged in to join a dinner party
         raise AuthenticationException()
-
-    session = session_manager.new_session(
-        search_request=search_request,
-        dinner_party_active_id=dinner_party_active_id,
-        user_maybe=user_maybe,
-    )
-    business_recommendation: DisplayableRecommendation = session_manager.get_next_recommendation_for_session(
-        session_id=session.id
-    )
-    return SessionCreationResponse(
-        session_id=session.id,
-        recommendation=business_recommendation,
-        dinner_party_id=session.dinner_party_id,
-    )
+    db_session = DbSession()
+    try:
+        session = session_manager.new_session(
+            db_session=db_session,
+            search_request=search_request,
+            dinner_party_active_id=dinner_party_active_id,
+            user_maybe=user_maybe,
+        )
+        business_recommendation: DisplayableRecommendation = session_manager.get_next_recommendation_for_session(
+            db_session=db_session,
+            session_id=session.id
+        )
+        return SessionCreationResponse(
+            session_id=session.id,
+            recommendation=business_recommendation,
+            dinner_party_id=session.dinner_party_id,
+        )
+    finally:
+        db_session.close()
 
 
 @business_search.route("/<session_id>", methods=["GET"])
 @json_content_type()
 @auth_route_utils.get_user_route
 def get_session(
-    session_id: str, user_maybe: Optional[SerializableBasicUser]
+        session_id: str, user_maybe: Optional[SerializableBasicUser]
 ) -> DisplayableSearchSession:
-    is_user_authorized(user_maybe, session_id)
+    db_session = DbSession()
+    try:
+        is_user_authorized(db_session, user_maybe, session_id)
 
-    return session_manager.get_displayable_session(session_id)
+        return session_manager.get_displayable_session(db_session, session_id)
+    finally:
+        db_session.close()
 
 
 @business_search.route("/<session_id>", methods=["POST"])
 @json_content_type()
 @auth_route_utils.get_user_route
 def apply_recommendation_action(
-    session_id: str, user_maybe: Optional[SerializableBasicUser]
+        session_id: str, user_maybe: Optional[SerializableBasicUser]
 ) -> Optional[DisplayableRecommendation]:
-    is_user_authorized(user_maybe, session_id)
-
-    recommendation_action_as_string = request.json["recommendationAction"]
-    recommendation_id = request.json["recommendationId"]
-
-    if recommendation_action_as_string not in RecommendationAction.__members__:
-        raise ValueError(
-            f"Unknown recommendation action {recommendation_action_as_string}"
-        )
-
-    recommendation_action: RecommendationAction = RecommendationAction[
-        recommendation_action_as_string
-    ]
-
-    is_current = request.json["isCurrent"]
-    if is_current:
-        session_manager.apply_recommendation_action_to_current(
-            session_id=session_id,
-            current_recommendation_id=recommendation_id,
-            recommendation_action=recommendation_action,
-        )
-        return session_manager.get_next_recommendation_for_session(
-            session_id=session_id
-        )
-    else:
-        session_manager.apply_action_to_maybe(
-            session_id=session_id,
-            recommendation_id=recommendation_id,
-            recommendation_action=recommendation_action,
-        )
-        return None
-
-
-def is_user_authorized(user: Optional[SerializableBasicUser], session_id: str):
     db_session = DbSession()
+    try:
+        is_user_authorized(db_session, user_maybe, session_id)
+
+        recommendation_action_as_string = request.json["recommendationAction"]
+        recommendation_id = request.json["recommendationId"]
+
+        if recommendation_action_as_string not in RecommendationAction.__members__:
+            raise ValueError(
+                f"Unknown recommendation action {recommendation_action_as_string}"
+            )
+
+        recommendation_action: RecommendationAction = RecommendationAction[
+            recommendation_action_as_string
+        ]
+
+        is_current = request.json["isCurrent"]
+        if is_current:
+            session_manager.apply_recommendation_action_to_current(
+                db_session=db_session,
+                session_id=session_id,
+                current_recommendation_id=recommendation_id,
+                recommendation_action=recommendation_action,
+            )
+            return session_manager.get_next_recommendation_for_session(
+                db_session=db_session,
+                session_id=session_id
+            )
+        else:
+            session_manager.apply_action_to_maybe(
+                db_session=db_session,
+                session_id=session_id,
+                recommendation_id=recommendation_id,
+                recommendation_action=recommendation_action,
+            )
+            return None
+    finally:
+        db_session.close()
+
+
+def is_user_authorized(db_session: DbSession, user: Optional[SerializableBasicUser], session_id: str):
     partial_session = SearchSession.get_session_by_id(
         db_session,
         session_id,
         lambda x: x.options(load_only(SearchSession.id, SearchSession.created_by_id)),
     )
     if (
-        partial_session.created_by_id is not None
-        and user.id != partial_session.created_by_id
+            partial_session.created_by_id is not None
+            and user.id != partial_session.created_by_id
     ):
         raise AuthorizationException(f"search_session--{session_id}")

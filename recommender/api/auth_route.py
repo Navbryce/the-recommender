@@ -8,19 +8,23 @@ from recommender.api.utils.json_content_type import (
     json_content_type,
 )
 from recommender.data.auth.user import BasicUser, SerializableBasicUser
+from recommender.db_config import DbSession
 
 auth = Blueprint("auth", __name__)
 
 
 @auth.route("register", methods=["PUT"])
 def register() -> Response:
-    nickname = request.json["nickname"]
-    user: BasicUser = user_manager.create_anonymous_user(nickname)
-    serializable_user = user.to_serializable_user()
-    print("TEST", nickname)
+    db_session = DbSession()
+    try:
+        nickname = request.json["nickname"]
+        user: BasicUser = user_manager.create_anonymous_user(db_session, nickname)
+        serializable_user = user.to_serializable_user()
 
-    response = generate_data_json_response(serializable_user)
-    auth_route_utils.login_as_user(response, serializable_user)
+        response = generate_data_json_response(serializable_user)
+        auth_route_utils.login_as_user(response, serializable_user)
+    finally:
+        db_session.close()
     return response
 
 
